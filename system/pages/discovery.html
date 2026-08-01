@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WannaSmile | Discovery</title>
+
+  <link id="favicon" rel="icon" href="https://raw.githubusercontent.com/mcmattyobriore/yogurtyooo.github.io/main/system/images/favicons/logo.png" />
+
+  <link rel="stylesheet" href="../css/main.css" />
+
+  <style>
+    html {
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: cover;
+      background-attachment: fixed;
+    }
+
+    #discoveryPage {
+      padding: 2rem;
+      text-align: center;
+    }
+
+    #discoveryPage h1 {
+      font-size: 2rem;
+      margin-bottom: 1.2rem;
+      display: inline-block; /* prevent block-level width reflow during scale */
+      transition: color 0.3s, transform 0.2s;
+      will-change: transform;
+    }
+
+    #discoveryPage h1:hover {
+      color: var(--accent-color);
+      transform: scale(1.1);
+    }
+
+    #discoveryPage .category-buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin: 1.5rem 0 2rem;
+    }
+
+    #discoveryPage .category-buttons button {
+      background: var(--header-bg);
+      color: var(--url-color);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5em 1.1em;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 0.95rem;
+      transition: background 0.25s, transform 0.2s, color 0.2s;
+    }
+
+    #discoveryPage .category-buttons button:hover {
+      color: var(--accent-color);
+      transform: scale(1.08);
+    }
+
+    #discoveryPage .category-buttons button.active {
+      background: var(--accent-color);
+      color: #fff;
+      box-shadow: 0 0 8px var(--accent-color);
+    }
+
+    #discoveryPage .assets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    #discoveryPage .asset-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 0.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    #discoveryPage .asset-card:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.18);
+    }
+
+    #discoveryPage .asset-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: transparent;
+    }
+
+    #discoveryPage .asset-card h4,
+    #discoveryPage .asset-card p {
+      font-family: monospace;
+      transition: color 0.25s;
+    }
+
+    #discoveryPage .asset-card h4 {
+      margin: 0.45rem 0 0.2rem;
+      font-size: 1rem;
+      color: var(--url-color);
+    }
+
+    #discoveryPage .asset-card p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #bbb;
+    }
+
+    #discoveryPage .asset-card h4:hover,
+    #discoveryPage .asset-card p:hover {
+      color: var(--accent-color);
+    }
+
+    #discoveryPage .asset-card a {
+      text-decoration: none;
+    }
+
+    #discoveryPage .soon {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* Empty / error state — fixed + centred */
+    #discoveryStatus {
+      display: none;
+      position: fixed;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+    #discoveryStatus.visible {
+      display: flex;
+    }
+    #discoveryStatus p {
+      font-family: monospace;
+      color: var(--url-color);
+      opacity: 0.65;
+      text-align: center;
+      pointer-events: auto;
+    }
+
+    .discovery-search-wrap {
+      width: 550px;
+      max-width: 90%;
+      margin: 0 auto 1.6rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <nav class="nav-links">
+      <a href="../../index.html">Home</a>
+      <a href="favorites.html">Favorites</a>
+      <a href="discovery.html">Discovery</a>
+      <a href="settings.html">Settings</a>
+      <a href="../../system/pages/news.html">News</a>
+      <a href="../../system/pages/info.html">Info</a>
+      <div class="pages-anchor">
+        <button class="mute-btn">
+          <img src="data:image/gif;base64,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" id="muteToggleImg" />
+        </button>
+        <button class="Qtype" onclick="if(window.WS_Quotes) WS_Quotes.cycleQtype()">
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABP0lEQVR42u2Z3Q7DIAiFC9n7v7K72ZKlsa2A/EzPd91iOQhSPA4AAAAAAAAAAGA7aLbB1lq7XZCIrLYtNs68Ipy+enamIykC9Bx/cur3HY+ISuFZztOHx5zrPCfZQSUEOG9jTQTP72WJwFbnzVU4WQTOdL6CCGz9YA8RSgoQGZnItbhSpGbZbh9cj8GqSHcPS4xG5Ol3DU0aaIo0rxh5SaB4Z+eXEMDamyxXBLcTwNpFLrEDLCIskwJaEVhiPKJFtfQcGhE4wqHI3t79GPR0ZpZtyZCGvZTtpc+og5G/xhwRqZHc/IuRmOW4uXs3c1RumgfMECH7nsA8EpNW+SsBy4/EngrVqBCayxRPTDdDvQYp85JD5UP0WW5JAY/JVPrlZHYdoArbcCRtiIg8dkCJv8EK1+QAAAAAAAAAAADYhzdO4/Q9EcgmzQAAAABJRU5ErkJggg==" id="QtypeToggle" />
+        </button>
+        <button id="cloakToggleBtn" title="Toggle tab cloak (I)">🔓</button>
+      </div>
+    </nav>
+    <div class="header-controls">
+      <a href="../../system/pages/profile.html">
+        <img id="pfp" src="https://raw.githubusercontent.com/mcmattyobriore/yogurtyooo.github.io/main/system/images/profile/smile.png" />
+      </a>
+      <button id="dashboardBtn">
+        <img src="https://raw.githubusercontent.com/5lackerish/5lackerish.github.io/main/system/images/icons/dashboard.png" />
+      </button>
+    </div>
+  </header>
+
+  <aside id="dashboardMenu" class="dashboard-menu">
+    <p id="dashNickname" style="opacity:0.6;font-size:0.85em;">Guest</p>
+    <a href="../../system/pages/credits.html">credits &amp; contributors</a>
+    <a href="../../system/pages/dmca.html">DMCA</a>
+  </aside>
+
+  <main id="discoveryPage">
+    <h1>Discovery</h1>
+
+    <div class="discovery-search-wrap">
+      <div class="search-box">
+        <input id="searchInput" type="text" placeholder="Search assets..." />
+        <button id="searchBtn">
+          <img src="https://raw.githubusercontent.com/5lackerish/5lackerish.github.io/main/system/images/icons/search.png" />
+        </button>
+      </div>
+    </div>
+
+    <div class="category-buttons">
+      <button data-category="rhythm">rhythm</button>
+      <button data-category="story">story</button>
+      <button data-category="endless-runner">endless-runner</button>
+      <button data-category="holiday">holiday</button>
+      <button data-category="battle-royale">battle-royale</button>
+      <button data-category="action">action</button>
+      <button data-category="sports">sports</button>
+      <button data-category="simulator">simulator</button>
+      <button data-category="tycoon">tycoon</button>
+      <button data-category="arcade">arcade</button>
+      <button data-category="horror">horror</button>
+      <button data-category="rpg">rpg</button>
+      <button data-category="turn-based-combat">turn-based-combat</button>
+      <button data-category="sandbox">sandbox</button>
+      <button data-category="boss-fight">boss-fight</button>
+      <button data-category="visual-novel">visual-novel</button>
+      <button data-category="adventure">adventure</button>
+      <button data-category="mystery">mystery</button>
+      <button data-category="survival">survival</button>
+      <button data-category="top-down">top-down</button>
+      <button data-category="shooter">shooter</button>
+      <button data-category="platformer">platformer</button>
+      <button data-category="tower-defense">tower-defense</button>
+      <button data-category="classic">classic</button>
+      <button data-category="puzzle">puzzle</button>
+      <button data-category="math">math</button>
+      <button data-category="idle">idle</button>
+      <button data-category="clicker">clicker</button>
+      <button data-category="parkour">parkour</button>
+      <button data-category="vsgr">vsgr</button>
+      <button data-category="maze">maze</button>
+      <button data-category="racing">racing</button>
+      <button data-category="strategy">strategy</button>
+      <button data-category="2-player">2-player</button>
+      <button data-category="fighting">fighting</button>
+      <button data-category="other">Other</button>
+    </div>
+
+    <div id="discoveryContainer"></div>
+  </main>
+
+  <!-- Fixed centred status (loading / error / no-results) -->
+  <div id="discoveryStatus">
+    <p id="discoveryStatusText">Loading assets…</p>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="https://github.com/wnasmile/" target="_blank" rel="noopener noreferrer">Source</a>
+      <a href="https://discord.gg/4AKdJxJUMH" target="_blank">Discord</a>
+      <a href="../../system/pages/dmca.html">DMCA</a>
+      <a href="../../system/pages/socials.html">Socials</a>
+      <a href="#" id="footerVersion">Version loading...</a>
+    </div>
+  </footer>
+
+  <script src="../js/utils.js"></script>
+  <script src="../js/themify.js"></script>
+  <script src="../js/sanitizer.js"></script>
+  <script src="../js/profile.js"></script>
+  <script src="../js/settings.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/mute.js"></script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const SHEETS_URL    = "https://script.google.com/macros/s/AKfycbyRGROJ70xwLEBLiWAw_7iSX42VkJSxg671wOmjfYo_cvvaDSs9mbXpK6S1EKa9oYQByA/exec";
+    const FALLBACK_IMG  = "https://raw.githubusercontent.com/theworldpt1/theworldpt1.github.io/main/system/images/404_blank.png";
+    const FALLBACK_LINK = "https://wanna5mile.github.io./source/dino/";
+
+    const container   = document.getElementById("discoveryContainer");
+    const statusBox   = document.getElementById("discoveryStatus");
+    const statusText  = document.getElementById("discoveryStatusText");
+    const searchInput = document.getElementById("searchInput");
+    const searchBtn   = document.getElementById("searchBtn");
+    const buttons     = document.querySelectorAll(".category-buttons button");
+
+    let assets         = [];
+    let activeCategory = null;
+
+    /* ── Status helpers ── */
+    function showStatus(msg) {
+      statusText.textContent = msg;
+      statusBox.classList.add("visible");
+    }
+    function hideStatus() {
+      statusBox.classList.remove("visible");
+    }
+
+    /* ── Normalise category strings from the sheet.
+       Sheet cells can be: "Platformer", " platformer ", "platformer, action"
+       Split on commas, trim, lowercase every token.
+    ── */
+    function parseCategories(raw) {
+      return safeStr(raw)
+        .split(",")
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean);
+    }
+
+    showStatus("Loading assets…");
+
+    /* ── Fetch ── */
+    try {
+      const res = await fetch(SHEETS_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const json = await res.json();
+      const rows = Array.isArray(json) ? json : (json.data || []);
+
+      assets = rows
+        .filter(r => r && Object.values(r).some(v => safeStr(v).trim()))
+        .map(r => ({
+          title:      safeStr(r.title).trim(),
+          author:     safeStr(r.author).trim(),
+          link:       safeStr(r.link).trim(),
+          image:      safeStr(r.image).trim(),
+          categories: [
+            ...parseCategories(r.category),
+            ...parseCategories(r["sub-category"]),
+          ],
+          status: safeStr(r.status).toLowerCase().trim(),
+        }))
+        .filter(r => r.title || r.link);
+
+    } catch (err) {
+      console.error("[discovery] fetch failed:", err);
+      showStatus("⚠ Failed to load game data. Check your connection.");
+      return;
+    }
+
+    if (!assets.length) {
+      showStatus("No games found in the sheet.");
+      return;
+    }
+
+    /* ── Build grid from a filtered subset of assets ── */
+    function buildGrid(list) {
+      container.innerHTML = "";
+
+      const visible = list.filter(a =>
+        a.status !== "hide" && a.status !== "hidden"
+      );
+
+      if (!visible.length) {
+        showStatus(activeCategory
+          ? `No "${activeCategory}" games found.`
+          : "No games match your search.");
+        return;
+      }
+      hideStatus();
+
+      const grid = document.createElement("div");
+      grid.className = "assets-grid";
+
+      visible.forEach(asset => {
+        const card = document.createElement("div");
+        card.className = "asset-card";
+        if (asset.status === "soon") card.classList.add("soon");
+
+        const a = document.createElement("a");
+        a.href   = asset.link || FALLBACK_LINK;
+        a.target = "_blank";
+        a.rel    = "noopener noreferrer";
+
+        const img = document.createElement("img");
+        img.src     = asset.image || FALLBACK_IMG;
+        img.alt     = asset.title;
+        img.onerror = () => { img.src = FALLBACK_IMG; };
+
+        const h4 = document.createElement("h4");
+        h4.textContent = asset.title || "Untitled";
+
+        const p = document.createElement("p");
+        p.textContent = asset.author || "";
+
+        a.append(img, h4, p);
+        card.appendChild(a);
+        grid.appendChild(card);
+      });
+
+      container.appendChild(grid);
+    }
+
+    /* ── Filter: runs on every category click or search input.
+       Filters the assets array directly then rebuilds the DOM.
+       This avoids stale DOM queries and is reliable regardless of
+       when buildGrid was last called.
+    ── */
+    function applyFilters() {
+      const query = searchInput.value.trim().toLowerCase();
+      const words = query.split(/\s+/).filter(Boolean);
+
+      const filtered = assets.filter(asset => {
+        // Category match — exact token in the parsed categories array
+        const matchesCat = !activeCategory
+          || asset.categories.includes(activeCategory);
+
+        // Search match — title or author contains every word
+        if (!matchesCat) return false;
+        if (!query)      return true;
+        const hay = (asset.title + " " + asset.author).toLowerCase();
+        return words.every(w => hay.includes(w));
+      });
+
+      buildGrid(filtered);
+    }
+
+    // Initial render — all assets
+    buildGrid(assets);
+
+    /* ── Category toggle ── */
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const cat = btn.dataset.category.toLowerCase();
+        if (activeCategory === cat) {
+          activeCategory = null;
+          btn.classList.remove("active");
+        } else {
+          activeCategory = cat;
+          buttons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+        }
+        applyFilters();
+      });
+    });
+
+    /* ── Search ── */
+    searchInput.addEventListener("input",   debounce(applyFilters, 150));
+    searchBtn.addEventListener("click",     applyFilters);
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter")  applyFilters();
+      if (e.key === "Escape") {
+        searchInput.value = "";
+        applyFilters();
+      }
+    });
+  });
+  </script>
+
+</body>
+</html>
