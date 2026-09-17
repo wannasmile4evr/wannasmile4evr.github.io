@@ -12,7 +12,7 @@ const THEME_SHORTCUT_KEY = "ws_selected_themes"; // [id, id, ...] up to 9, pick 
 let _themeData = [];
 
 const _SHEETS_URL =
-  "https://script.google.com/macros/s/AKfycbyZxKfF569T-iExBHEpAbMEc1jyoR_8Yf3g0CWUqOF75zgQKdeMtYtxgf0F-D4Bxr-7/exec?type=themes";
+  "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec?type=themes";
 
 const _COL = {
   name: 0,
@@ -325,7 +325,7 @@ function applyTheme(id) {
 // pack already lives at a predictable assets/media/gifs/${id}/${state}.gif
 // path. Parsed into the same {id, name, states} shape used everywhere below.
 const _GIFPACK_SHEETS_URL =
-  "https://script.google.com/macros/s/AKfycbyZxKfF569T-iExBHEpAbMEc1jyoR_8Yf3g0CWUqOF75zgQKdeMtYtxgf0F-D4Bxr-7/exec?type=gifpacks";
+  "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec?type=gifpacks";
 
 const GIF_PACK_ACTIVE_KEY    = "ws_active_gifpack";
 const GIF_PACK_CACHE_KEY     = "ws_gifpack_cache";    // { [id]: {id,name,states} }

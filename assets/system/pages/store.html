@@ -210,7 +210,7 @@
 <script>
 "use strict";
 
-const SHEETS_URL    = "https://script.google.com/macros/s/AKfycbyZxKfF569T-iExBHEpAbMEc1jyoR_8Yf3g0CWUqOF75zgQKdeMtYtxgf0F-D4Bxr-7/exec?type=widgets";
+const SHEETS_URL    = "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec?type=widgets";
 const SELECTION_KEY = "ws_selected_widgets";
 
 function bustCache(url) {
@@ -318,7 +318,7 @@ async function init() {
 // arrays (not objects) from ?type=themes, and selection is capped at 9
 // since keyboard shortcuts only go up to key "9". ----
 
-const THEMES_URL          = "https://script.google.com/macros/s/AKfycbyZxKfF569T-iExBHEpAbMEc1jyoR_8Yf3g0CWUqOF75zgQKdeMtYtxgf0F-D4Bxr-7/exec?type=themes";
+const THEMES_URL          = "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec?type=themes";
 const THEME_SELECTION_KEY = "ws_selected_themes"; // up to 9 ids, pick order — consumed by ui.js's keyboard shortcuts
 const THEME_ACTIVE_KEY    = "selectedTheme";      // same key themify.js already reads on load
 const THEME_CACHE_KEY     = "ws_theme_cache";     // { [id]: rawRowArray } — same shape themify.js caches
@@ -473,7 +473,7 @@ async function initThemes() {
 // cap: cycling with [ / ] isn't limited to physical keys the way theme
 // shortcuts are. ----
 
-const GIFPACKS_URL          = "https://script.google.com/macros/s/AKfycbyZxKfF569T-iExBHEpAbMEc1jyoR_8Yf3g0CWUqOF75zgQKdeMtYtxgf0F-D4Bxr-7/exec?type=gifpacks";
+const GIFPACKS_URL          = "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec?type=gifpacks";
 const GIFPACK_SELECTION_KEY = "ws_selected_gifpacks"; // cycle order for [ / ] on the main site
 const GIFPACK_ACTIVE_KEY    = "ws_active_gifpack";
 

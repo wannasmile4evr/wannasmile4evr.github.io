@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const SHEETS_URL    = "https://script.google.com/macros/s/AKfycbyZxKfF569T-iExBHEpAbMEc1jyoR_8Yf3g0CWUqOF75zgQKdeMtYtxgf0F-D4Bxr-7/exec?type=widgets";
+  const SHEETS_URL    = "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec?type=widgets";
   const SELECTION_KEY = "ws_selected_widgets"; // set by store.html: array of widget ids, in pick order
   const ACTIVE_KEY    = "ws_active_widget";    // which of those ids is currently "loaded" into the bubble
 

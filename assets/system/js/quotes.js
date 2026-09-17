@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const box     = document.getElementById("quoteBox");
   if (!wrapper || !box) return;
 
-  const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyZxKfF569T-iExBHEpAbMEc1jyoR_8Yf3g0CWUqOF75zgQKdeMtYtxgf0F-D4Bxr-7/exec?type=quotes";
+  const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec?type=quotes";
 
 
   let LOCAL_QUOTES  = [];

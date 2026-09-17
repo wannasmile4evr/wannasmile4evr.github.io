@@ -166,7 +166,7 @@ window.addEventListener("load", () => {
     window.config = {
       fallbackImage:    "https://raw.githubusercontent.com/01110010-00110101/01110010-00110101.github.io/main/system/images/404_blank.png",
       fallbackLink:     "https://wnasmile.github.io./source/dino/",
-      sheetUrl:         "https://script.google.com/macros/s/AKfycbyZxKfF569T-iExBHEpAbMEc1jyoR_8Yf3g0CWUqOF75zgQKdeMtYtxgf0F-D4Bxr-7/exec",
+      sheetUrl:         "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec",
       devBuildUrl:      "",
     };
 
