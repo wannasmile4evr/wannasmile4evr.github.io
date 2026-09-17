@@ -322,7 +322,7 @@ function applyTheme(id) {
 //
 // Data comes from GifPacksWS (?type=gifpacks) — deliberately minimal there:
 // no `src` column, just "width|height|pixelated" per state cell, since every
-// pack already lives at a predictable assets/media/gifs/${id}/${state}.gif
+// pack already lives at a predictable assets/media/themes/${id}/gif-states/${state}.gif
 // path. Parsed into the same {id, name, states} shape used everywhere below.
 const _GIFPACK_SHEETS_URL =
   "https://script.google.com/macros/s/AKfycbzsAzJ69x4UisB54qWIXzJEG6Y6Xt8BniYUDl8PdLUPytjP8lkrmwzNVRHj6FZMK9w5/exec?type=gifpacks";
@@ -374,7 +374,7 @@ function _parseGifPackRow(row) {
     if (!Number.isFinite(width) || !Number.isFinite(height)) return;
 
     states[key] = {
-      src: `assets/media/gifs/${id}/${key}.gif`,
+      src: `assets/media/themes/${id}/gif-states/${key}.gif`,
       width,
       height,
       pixelated: (pixRaw || "").toLowerCase() !== "false",

@@ -871,7 +871,7 @@ window.addEventListener("load", () => {
 
       if (typeSet.has("grail")) {
         const grailEl = document.createElement("img");
-        grailEl.src = "assets/media/images/grail.png";
+        grailEl.src = "assets/media/images/type-overlayStyles/grail.png";
         grailEl.alt = "";
         grailEl.className = "grail-bg";
         wrapper.insertBefore(grailEl, wrapper.firstChild);
@@ -906,7 +906,7 @@ window.addEventListener("load", () => {
         const isDmca    = typeSet.has("dmca") || statusSet.has("dmca");
         const isBlocked = typeSet.has("blocked") || statusSet.has("blocked");
         if (isDmca || isBlocked) {
-          img.src = "assets/media/images/cooked.png";
+          img.src = "assets/media/images/placeholders/cooked.png";
           img.style.imageRendering = "pixelated";
         }
         card.classList.add("cooked");

@@ -147,7 +147,7 @@
       if (favLink) favLink.href = favLink.dataset.realHref || "/favicon.ico";
 
       const cloakImg = document.querySelector("#cloak-btn img");
-      if (cloakImg) cloakImg.src = "assets/media/images/vis.png";
+      if (cloakImg) cloakImg.src = "assets/media/images/cloak-btn/visable.png";
 
       document.documentElement.setAttribute("theme", "redux");
     } catch {}
