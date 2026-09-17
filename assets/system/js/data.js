@@ -139,8 +139,6 @@
 
     CLEARABLE_KEYS.forEach(k => localStorage.removeItem(k));
 
-    try { sessionStorage.removeItem("__ws_assetsCache__"); } catch {}
-
     try {
       const htmlTitle = document.querySelector("title");
       if (htmlTitle) document.title = htmlTitle.textContent || document.title;

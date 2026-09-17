@@ -1407,17 +1407,7 @@ window.addEventListener("load", () => {
         catList.innerHTML = "";
         subList.innerHTML = "";
 
-        // Read from the same single-fetch session cache loadAssets() already writes
-        // to (ASSETS_CACHE_KEY), rather than the live window.assetsData variable —
-        // this way the dropdown always has a reliable source for the rest of the
-        // session regardless of exactly when/how it's opened, without ever
-        // triggering a second network fetch of its own.
-        let sourceRows = window.assetsData;
-        try {
-          const cached = JSON.parse(sessionStorage.getItem(ASSETS_CACHE_KEY) || "null");
-          if (Array.isArray(cached) && cached.length) sourceRows = cached;
-        } catch {  }
-        sourceRows = sourceRows || [];
+        const sourceRows = window.assetsData || [];
 
         const cats = new Set();
         const subs = new Set();
@@ -1585,20 +1575,17 @@ window.addEventListener("load", () => {
   let _resolveSheetData;
   window._sheetDataReady = new Promise(res => { _resolveSheetData = res; });
 
-  const ASSETS_CACHE_KEY = "__ws_assetsCache__";
-
   function _isValidAssetsShape(data) {
     return Array.isArray(data);
   }
 
+  // Deliberately no cache/fallback here — every load fetches live, every
+  // session. A stale cached copy could silently hide newly added assets
+  // behind an old snapshot; if the live fetch fails, that should surface
+  // as a visible crash, not a quiet substitution of old data.
   async function loadAssets() {
     const fetchUrl = window._activeFetchUrl || config.sheetUrl;
     let raw;
-
-    const readCache = () => {
-      try { return JSON.parse(sessionStorage.getItem(ASSETS_CACHE_KEY) || "null"); }
-      catch { return null; }
-    };
 
     try {
       const res = await fetch(bustCache(fetchUrl), { cache: "no-store" });
@@ -1608,18 +1595,11 @@ window.addEventListener("load", () => {
         console.error("[loadAssets] Network response is not a valid array:", raw);
         throw new Error("Invalid data from network");
       }
-      try { sessionStorage.setItem(ASSETS_CACHE_KEY, JSON.stringify(raw)); } catch {  }
     } catch (err) {
-      const cached = readCache();
-      if (cached !== null && _isValidAssetsShape(cached)) {
-        console.warn("[loadAssets] Live fetch failed — falling back to last cached data.", err);
-        raw = cached;
-      } else {
-        console.error("[loadAssets] fetch failed and no valid cache to fall back to:", err);
-        _resolveSheetData();
-        runCrashSequence();
-        throw err;
-      }
+      console.error("[loadAssets] fetch failed:", err);
+      _resolveSheetData();
+      runCrashSequence();
+      throw err;
     }
 
     _resolveSheetData(raw);
@@ -1657,7 +1637,6 @@ window.addEventListener("load", () => {
     window._pageRestored       = false;
     window._placeholderRunning = false;
 
-    sessionStorage.removeItem(ASSETS_CACHE_KEY);
     sessionStorage.removeItem("scrollY");
 
     window._cardIndex = new Map();
