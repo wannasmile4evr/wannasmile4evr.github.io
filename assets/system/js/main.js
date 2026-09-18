@@ -789,6 +789,116 @@ window.addEventListener("load", () => {
       });
     }
 
+    if (!window._bugReportModalBuilt) {
+      window._bugReportModalBuilt = true;
+
+      const BUG_REPORT_TERMS = {
+        "Blocked": [
+          "I understand “Blocked” means the game refuses to load or shows an access-denied message.",
+          "I've confirmed this happens on a fresh page reload, not just once.",
+          "I'm not filing this to grief, spam, or troll the report queue.",
+        ],
+        "404/Missing": [
+          "I confirm the linked page or file returns a 404 or otherwise can't be found.",
+          "I've waited for the page to load and this isn't just a slow connection.",
+          "I'm not filing this to grief, spam, or troll the report queue.",
+        ],
+        "Missing Icon": [
+          "I confirm the card's icon/thumbnail is blank or broken, not just still loading.",
+          "I've reloaded the page and the icon is still missing.",
+          "I'm not filing this to grief, spam, or troll the report queue.",
+        ],
+        "Buffer/Loading Error": [
+          "I confirm the game gets stuck buffering/loading and never finishes.",
+          "I've waited a reasonable amount of time and tried reloading.",
+          "I'm not filing this to grief, spam, or troll the report queue.",
+        ],
+      };
+
+      const overlay = document.createElement("div");
+      overlay.className = "bug-report-overlay";
+
+      const modal = document.createElement("div");
+      modal.className = "bug-report-modal";
+      modal.innerHTML = `
+        <img id="bugReportImg" alt="" />
+        <h3 id="bugReportTitle"></h3>
+        <p class="bug-report-author" id="bugReportAuthor"></p>
+        <p class="bug-report-question" id="bugReportQuestion"></p>
+        <ul class="bug-report-terms" id="bugReportTerms"></ul>
+        <div class="bug-report-throbber" id="bugReportThrobber">
+          <span class="bug-report-spinner"></span>
+          <span>Submitting report&hellip;</span>
+        </div>
+        <div class="bug-report-actions" id="bugReportActions">
+          <button type="button" id="bugReportDiscard">Discard</button>
+          <button type="button" id="bugReportAgree" class="bug-report-agree">Agree to terms</button>
+        </div>
+      `;
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      const imgEl      = modal.querySelector("#bugReportImg");
+      const titleEl2   = modal.querySelector("#bugReportTitle");
+      const authorEl2  = modal.querySelector("#bugReportAuthor");
+      const questionEl = modal.querySelector("#bugReportQuestion");
+      const termsEl    = modal.querySelector("#bugReportTerms");
+      const throbberEl = modal.querySelector("#bugReportThrobber");
+      const actionsEl  = modal.querySelector("#bugReportActions");
+      const discardBtn = modal.querySelector("#bugReportDiscard");
+      const agreeBtn   = modal.querySelector("#bugReportAgree");
+
+      const resetModalUI = () => {
+        modal.classList.remove("closing");
+        throbberEl.classList.remove("visible");
+        actionsEl.style.display = "flex";
+        discardBtn.disabled = false;
+        agreeBtn.disabled   = false;
+      };
+
+      const closeModal = () => {
+        overlay.classList.remove("visible");
+        setTimeout(() => { overlay.style.display = "none"; resetModalUI(); }, 250);
+      };
+
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+      discardBtn.addEventListener("click", closeModal);
+
+      agreeBtn.addEventListener("click", () => {
+        discardBtn.disabled = true;
+        agreeBtn.disabled   = true;
+        throbberEl.classList.add("visible");
+
+        // Placeholder: no report is actually sent/logged yet, pending the
+        // Apps Script report-collection endpoint. Just simulate a submit
+        // delay, then play the dismiss animation.
+        setTimeout(() => {
+          modal.classList.add("closing");
+          overlay.classList.remove("visible");
+          setTimeout(() => { overlay.style.display = "none"; resetModalUI(); }, 400);
+        }, 1200);
+      });
+
+      window._openBugReportModal = ({ title, author, image, reason }) => {
+        imgEl.src              = image || "";
+        imgEl.alt              = title || "";
+        titleEl2.textContent   = title || "Untitled";
+        authorEl2.textContent  = author || "";
+        questionEl.textContent = `Report "${title || "this asset"}" for ${reason}?`;
+
+        termsEl.innerHTML = "";
+        (BUG_REPORT_TERMS[reason] || []).forEach((term) => {
+          const li = document.createElement("li");
+          li.textContent = term;
+          termsEl.appendChild(li);
+        });
+
+        resetModalUI();
+        overlay.style.display = "flex";
+        requestAnimationFrame(() => overlay.classList.add("visible"));
+      };
+    }
+
     for (const asset of domOrdered) {
       const title      = safeStr(asset.title).trim();
       const author     = safeStr(asset.author).trim();
@@ -1128,12 +1238,6 @@ window.addEventListener("load", () => {
       bugMenu._bugBtn = bugBtn;
       document.body.appendChild(bugMenu);
 
-      // Placeholder until the Apps Script report-collection endpoint exists —
-      // logs for now so the option-click wiring doesn't need to change later.
-      function reportBug(assetTitle, reason) {
-        console.log(`[bug-report] "${assetTitle}" -> ${reason}`);
-      }
-
       const closeBugMenu = () => {
         bugMenu.style.display = "none";
         bugMenu.setAttribute("aria-hidden", "true");
@@ -1150,8 +1254,8 @@ window.addEventListener("load", () => {
         item.textContent = reason;
         item.addEventListener("click", (e) => {
           e.preventDefault(); e.stopPropagation();
-          reportBug(title || "asset", reason);
           closeBugMenu();
+          window._openBugReportModal?.({ title, author, image: imageSrc, reason });
         });
         bugMenu.appendChild(item);
       }

@@ -335,6 +335,143 @@ align-items: center;
   opacity: 0.8;
 }
 
+.bug-report-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  padding: 20px;
+}
+
+.bug-report-overlay.visible {
+  opacity: 1;
+}
+
+.bug-report-modal {
+  background: rgba(15, 15, 20, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 340px;
+  width: 100%;
+  color: #f2f2f2;
+  font-family: monospace;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.bug-report-modal.closing {
+  transform: translateY(140vh);
+  opacity: 0;
+}
+
+.bug-report-modal img {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+  margin: 0 auto 12px;
+  display: block;
+}
+
+.bug-report-modal h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+}
+
+.bug-report-author {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+.bug-report-question {
+  font-size: 13px;
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.bug-report-terms {
+  text-align: left;
+  font-size: 12px;
+  color: #c9c9c9;
+  line-height: 1.6;
+  margin: 0 0 18px;
+  padding-left: 18px;
+}
+
+.bug-report-throbber {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #c9c9c9;
+  padding: 4px 0 16px;
+}
+
+.bug-report-throbber.visible {
+  display: flex;
+}
+
+.bug-report-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: #e65a4f;
+  border-radius: 50%;
+  animation: bugReportSpin 0.7s linear infinite;
+}
+
+@keyframes bugReportSpin {
+  to { transform: rotate(360deg); }
+}
+
+.bug-report-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.bug-report-actions button {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #f2f2f2;
+  font-family: monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.bug-report-actions button:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.bug-report-actions .bug-report-agree {
+  background: #e65a4f;
+  border-color: #e65a4f;
+}
+
+.bug-report-actions .bug-report-agree:hover {
+  background: #d64a3f;
+}
+
+.bug-report-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .search-category-list p {
   flex-basis: 100%;
   padding: 6px 0;
