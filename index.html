@@ -15,78 +15,57 @@
   }
   a { color: inherit; }
 
-  /* ---- header ---- */
-  header {
+  /* ---- action bar (itch.io "user_tools" equivalent) ---- */
+  .action-bar {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 16px 24px;
-    border-bottom: 1px solid #23262e;
     flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #15161b;
+    border-bottom: 1px solid #23262e;
   }
-  .brand {
-    font-weight: 700;
-    font-size: 16px;
-    letter-spacing: 0.2px;
-  }
-  .header-links {
-    display: flex;
-    gap: 18px;
-    font-size: 13px;
-  }
-  .header-links a {
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border-radius: 7px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #cfd2d9;
     text-decoration: none;
-    color: #a9adb8;
-    transition: color 0.2s;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
   }
-  .header-links a:hover { color: #fff; }
+  .action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
 
   /* ---- hero ---- */
-  .hero {
-    position: relative;
-    height: min(46vw, 360px);
-    min-height: 200px;
-    background: #1a1c22 url("assets/media/themes/redux/system-media/mainBg.png") center/cover no-repeat;
+  .header {
+    text-align: center;
+    padding: 30px 24px 0;
   }
-  .hero::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(15,16,19,0.15) 0%, rgba(15,16,19,0.92) 100%);
-  }
-  .hero-content {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    max-width: 900px;
+  .header img {
+    max-width: 640px;
+    width: 100%;
+    border-radius: 10px;
+    display: block;
     margin: 0 auto;
-    padding: 0 24px 26px;
+    border: 1px solid #23262e;
   }
-  .hero-content h1 {
-    margin: 0 0 6px;
-    font-size: clamp(26px, 4vw, 42px);
-  }
-  .hero-content p {
-    margin: 0;
-    color: #c7cad2;
-    font-size: 14px;
-    max-width: 560px;
+  .header h1 {
+    margin: 18px 0 0;
+    font-size: clamp(24px, 4vw, 34px);
   }
 
   /* ---- layout ---- */
   .page {
-    max-width: 900px;
+    max-width: 700px;
     margin: 0 auto;
-    padding: 32px 24px 60px;
-    display: grid;
-    grid-template-columns: 1fr 260px;
-    gap: 40px;
-  }
-  @media (max-width: 720px) {
-    .page { grid-template-columns: 1fr; }
+    padding: 28px 24px 60px;
   }
 
-  main h2 {
+  .page h2 {
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.6px;
@@ -95,8 +74,8 @@
     padding-bottom: 8px;
     margin: 32px 0 16px;
   }
-  main h2:first-child { margin-top: 0; }
-  main p {
+  .page h2:first-child { margin-top: 0; }
+  .page p {
     font-size: 14.5px;
     line-height: 1.7;
     color: #cfd2d9;
@@ -131,6 +110,61 @@
   .feature-card b { display: block; font-size: 13.5px; margin-bottom: 4px; }
   .feature-card span { font-size: 12.5px; color: #9a9ea8; }
 
+  /* ---- more information toggle ---- */
+  .info-toggle-row { margin-top: 28px; }
+  .info-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #9a9ea8;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .info-toggle-btn .tick { transition: transform 0.2s ease; }
+  .info-toggle-btn.open .tick { transform: rotate(180deg); }
+  .info-panel {
+    display: none;
+    margin-top: 14px;
+    background: #181a20;
+    border: 1px solid #23262e;
+    border-radius: 10px;
+    padding: 4px 16px;
+  }
+  .info-panel.open { display: block; }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #23262e;
+    font-size: 13px;
+    color: #c7cad2;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row span:first-child { color: #8a8e98; }
+  .info-row a { color: #e8e8e8; text-decoration: underline dotted; }
+  .info-row .tag-row { justify-content: flex-end; }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #c7cad2;
+  }
+
   .gallery {
     display: flex;
     gap: 10px;
@@ -144,42 +178,56 @@
     flex-shrink: 0;
   }
 
-  /* ---- sidebar ---- */
-  aside {
-    font-size: 13px;
+  /* ---- comments ---- */
+  .comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
   }
-  .info-box {
+  .comment {
+    display: flex;
+    gap: 10px;
     background: #181a20;
     border: 1px solid #23262e;
     border-radius: 10px;
-    padding: 16px;
+    padding: 12px 14px;
   }
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 7px 0;
-    border-bottom: 1px solid #23262e;
-    color: #c7cad2;
-  }
-  .info-row:last-child { border-bottom: none; }
-  .info-row span:first-child { color: #8a8e98; }
-  .info-row a { color: #e8e8e8; text-decoration: underline dotted; }
+  .comment img { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; }
+  .comment .comment-meta { font-size: 12px; color: #8a8e98; margin-bottom: 3px; }
+  .comment .comment-meta a { color: #cfd2d9; text-decoration: none; font-weight: 600; }
+  .comment .comment-body { font-size: 13px; color: #cfd2d9; line-height: 1.5; }
+  .comment-empty { font-size: 13px; color: #8a8e98; }
 
-  .tag-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 12px;
+  /* ---- rating modal ---- */
+  .rate-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.25s ease;
   }
-  .tag {
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.14);
-    color: #c7cad2;
+  .rate-overlay.visible { opacity: 1; }
+  .rate-modal {
+    background: rgba(15, 15, 20, 0.94);
+    backdrop-filter: blur(10px);
+    border-radius: 14px;
+    padding: 24px;
+    width: min(300px, calc(100% - 40px));
+    text-align: center;
   }
+  .rate-modal h3 { margin: 0 0 6px; font-size: 15px; }
+  .rate-modal p { margin: 0 0 16px; font-size: 12.5px; color: #9a9ea8; }
+  .rate-stars { font-size: 30px; letter-spacing: 4px; cursor: pointer; }
+  .rate-stars span { color: #3a3d46; transition: color 0.15s; }
+  .rate-stars span.filled, .rate-stars span:hover, .rate-stars span:hover ~ span { color: #e65a4f; }
+  .rate-stars { unicode-bidi: bidi-override; direction: rtl; display: inline-block; }
+  .rate-thanks { margin-top: 14px; font-size: 12.5px; color: #9fd89f; display: none; }
+  .rate-thanks.visible { display: block; }
 
   footer {
     text-align: center;
@@ -194,86 +242,194 @@
 </head>
 <body>
 
-  <header>
-    <div class="brand">WannaSmile4Evr</div>
-    <div class="header-links">
-      <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io" target="_blank" rel="noopener noreferrer">source</a>
-      <a href="assets/system/pages/dmca.html">dmca</a>
-    </div>
-  </header>
+  <div class="action-bar">
+    <a class="action-btn" href="https://ankomstudios.com" target="_blank" rel="noopener noreferrer">Visit Ankom Studios</a>
+    <a class="action-btn" href="https://guns.lol/ankomstudios" target="_blank" rel="noopener noreferrer">Follow Ankomstudios</a>
+    <button class="action-btn" type="button" id="rateBtn">Rate this project</button>
+    <a class="action-btn" href="https://ankomstudios.com" target="_blank" rel="noopener noreferrer">Related projects</a>
+    <a class="action-btn" href="#comments">Comments</a>
+  </div>
 
-  <div class="hero">
-    <div class="hero-content">
-      <h1>WannaSmile4Evr</h1>
-      <p>A constantly-growing, no-signup library of browser games — built and kept alive one link at a time.</p>
-    </div>
+  <div class="header">
+    <img src="assets/media/themes/redux/system-media/mainBg.png" alt="WannaSmile4Evr" />
+    <h1>WannaSmile4Evr</h1>
   </div>
 
   <div class="page">
-    <main>
-      <h2>About</h2>
-      <p>
-        WannaSmile4Evr is an independent, ad-free collection of playable browser games —
-        arcade throwbacks, visual novels, oddities pulled from every corner of the web, and
-        a few in-house pages besides. No accounts, no installs: pick something and it just runs.
-      </p>
-      <p>
-        The library and its themes are rebuilt continuously, so the shelf looks a little
-        different every time you check back.
-      </p>
-      <a class="play-btn" href="assets/system/pages/main.html">Play Now →</a>
+    <p>
+      WannaSmile4Evr is an independent, ad-free collection of playable browser games —
+      arcade throwbacks, visual novels, oddities pulled from every corner of the web, and
+      a few in-house pages besides. No accounts, no installs: pick something and it just runs.
+    </p>
+    <p>
+      The library and its themes are rebuilt continuously, so the shelf looks a little
+      different every time you check back.
+    </p>
+    <a class="play-btn" href="assets/system/pages/main.html">Play Now →</a>
 
-      <h2>Features</h2>
-      <div class="feature-grid">
-        <div class="feature-card"><b>Huge library</b><span>Hundreds of games, sorted and searchable.</span></div>
-        <div class="feature-card"><b>Custom themes</b><span>Pick a look, or make your own.</span></div>
-        <div class="feature-card"><b>No sign-up</b><span>Nothing to install, nothing to create.</span></div>
-        <div class="feature-card"><b>Favorites & shortcuts</b><span>Keep what you like close at hand.</span></div>
-      </div>
+    <h2>Features</h2>
+    <div class="feature-grid">
+      <div class="feature-card"><b>Huge library</b><span>Hundreds of games, sorted and searchable.</span></div>
+      <div class="feature-card"><b>Custom themes</b><span>Pick a look, or make your own.</span></div>
+      <div class="feature-card"><b>No sign-up</b><span>Nothing to install, nothing to create.</span></div>
+      <div class="feature-card"><b>Favorites & shortcuts</b><span>Keep what you like close at hand.</span></div>
+    </div>
 
-      <h2>Gallery</h2>
-      <div class="gallery">
-        <img src="assets/media/themes/redux/system-media/headerBg.png" alt="" />
-        <img src="assets/media/themes/redux/system-media/mainBg.png" alt="" />
-        <img src="assets/media/themes/redux/system-media/quoteBg.png" alt="" />
-        <img src="assets/media/themes/redux/system-media/footerBg.png" alt="" />
-      </div>
-    </main>
-
-    <aside>
-      <div class="info-box">
+    <div class="info-toggle-row">
+      <button class="info-toggle-btn" id="infoToggleBtn" type="button">
+        More information
+        <svg class="tick" width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="info-panel" id="infoPanel">
+        <div class="info-row"><span>Updated</span><span id="infoUpdated">—</span></div>
+        <div class="info-row"><span>Published</span><span id="infoPublished">—</span></div>
         <div class="info-row"><span>Status</span><span>In development</span></div>
         <div class="info-row"><span>Platform</span><span>Browser (HTML5)</span></div>
         <div class="info-row"><span>Author</span><a href="https://github.com/wannasmile4evr" target="_blank" rel="noopener noreferrer">wannasmile4evr</a></div>
-        <div class="info-row"><span>Last update</span><span id="sidebarLastUpdate">—</span></div>
-        <div class="tag-row">
-          <span class="tag">arcade</span>
-          <span class="tag">collection</span>
-          <span class="tag">free</span>
-          <span class="tag">browser</span>
+        <div class="info-row"><span>Genre</span><span>Arcade / Collection</span></div>
+        <div class="info-row">
+          <span>Tags</span>
+          <div class="tag-row">
+            <span class="tag">arcade</span>
+            <span class="tag">collection</span>
+            <span class="tag">free</span>
+            <span class="tag">browser</span>
+          </div>
         </div>
       </div>
-    </aside>
+    </div>
+
+    <h2>Gallery</h2>
+    <div class="gallery">
+      <img src="assets/media/themes/redux/system-media/headerBg.png" alt="" />
+      <img src="assets/media/themes/redux/system-media/mainBg.png" alt="" />
+      <img src="assets/media/themes/redux/system-media/quoteBg.png" alt="" />
+      <img src="assets/media/themes/redux/system-media/footerBg.png" alt="" />
+    </div>
+
+    <h2 id="comments">Comments</h2>
+    <a class="action-btn" id="leaveCommentBtn" href="#" style="margin-bottom: 14px; display: inline-flex;">Leave a comment</a>
+    <div class="comment-list" id="commentList">
+      <div class="comment-empty">Loading comments…</div>
+    </div>
   </div>
 
   <footer>
-    <a href="assets/system/pages/main.html">Enter the library</a> · <a href="assets/system/pages/dmca.html">DMCA</a>
+    <a href="assets/system/pages/main.html">Enter the library</a> · <a href="assets/system/pages/dmca.html">DMCA</a> · <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io" target="_blank" rel="noopener noreferrer">source</a>
   </footer>
+
+  <div class="rate-overlay" id="rateOverlay">
+    <div class="rate-modal">
+      <h3>Rate this project</h3>
+      <p>Pick a star — this is just for you, nothing's stored or averaged (yet).</p>
+      <div class="rate-stars" id="rateStars">
+        <span data-v="5">★</span><span data-v="4">★</span><span data-v="3">★</span><span data-v="2">★</span><span data-v="1">★</span>
+      </div>
+      <div class="rate-thanks" id="rateThanks">Thanks for rating! ⭐</div>
+    </div>
+  </div>
 
   <script>
     (function () {
-      const el = document.getElementById("sidebarLastUpdate");
-      if (!el) return;
-      fetch("https://api.github.com/repos/wannasmile4evr/wannasmile4evr.github.io/commits/main")
+      const REPO = "wannasmile4evr/wannasmile4evr.github.io";
+
+      // ---- More information toggle ----
+      const toggleBtn = document.getElementById("infoToggleBtn");
+      const panel     = document.getElementById("infoPanel");
+      toggleBtn.addEventListener("click", () => {
+        const open = panel.classList.toggle("open");
+        toggleBtn.classList.toggle("open", open);
+      });
+
+      // ---- Repo metadata (Updated / Published) ----
+      fetch(`https://api.github.com/repos/${REPO}`)
         .then((res) => { if (!res.ok) throw new Error(res.status); return res.json(); })
         .then((data) => {
-          const date = data?.commit?.committer?.date;
-          if (!date) return;
-          el.textContent = new Date(date).toLocaleDateString(undefined, {
-            year: "numeric", month: "short", day: "numeric",
+          const fmt = (d) => new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+          if (data.pushed_at)  document.getElementById("infoUpdated").textContent   = fmt(data.pushed_at);
+          if (data.created_at) document.getElementById("infoPublished").textContent = fmt(data.created_at);
+        })
+        .catch(() => {});
+
+      // ---- Rating modal (cosmetic only — localStorage, no aggregate) ----
+      const rateBtn     = document.getElementById("rateBtn");
+      const rateOverlay = document.getElementById("rateOverlay");
+      const rateStars   = document.getElementById("rateStars");
+      const rateThanks  = document.getElementById("rateThanks");
+
+      rateBtn.addEventListener("click", () => {
+        rateThanks.classList.remove("visible");
+        rateStars.querySelectorAll("span").forEach((s) => s.classList.remove("filled"));
+        const saved = parseInt(localStorage.getItem("ws_landing_rating") || "0", 10);
+        if (saved) {
+          rateStars.querySelectorAll("span").forEach((s) => {
+            if (parseInt(s.dataset.v, 10) <= saved) s.classList.add("filled");
+          });
+        }
+        rateOverlay.style.display = "flex";
+        requestAnimationFrame(() => rateOverlay.classList.add("visible"));
+      });
+
+      rateOverlay.addEventListener("click", (e) => {
+        if (e.target === rateOverlay) {
+          rateOverlay.classList.remove("visible");
+          setTimeout(() => { rateOverlay.style.display = "none"; }, 250);
+        }
+      });
+
+      rateStars.querySelectorAll("span").forEach((star) => {
+        star.addEventListener("click", () => {
+          const v = star.dataset.v;
+          localStorage.setItem("ws_landing_rating", v);
+          rateStars.querySelectorAll("span").forEach((s) => {
+            s.classList.toggle("filled", parseInt(s.dataset.v, 10) <= parseInt(v, 10));
+          });
+          rateThanks.classList.add("visible");
+          setTimeout(() => {
+            rateOverlay.classList.remove("visible");
+            setTimeout(() => { rateOverlay.style.display = "none"; }, 250);
+          }, 900);
+        });
+      });
+
+      // ---- Comments, backed by GitHub issues labeled "comment" ----
+      const commentList = document.getElementById("commentList");
+      const leaveBtn     = document.getElementById("leaveCommentBtn");
+      leaveBtn.href =
+        `https://github.com/${REPO}/issues/new` +
+        `?title=${encodeURIComponent("Comment")}` +
+        `&body=${encodeURIComponent("Leave your comment here — it'll show up on the site's Comments section.")}` +
+        `&labels=${encodeURIComponent("comment")}`;
+      leaveBtn.target = "_blank";
+      leaveBtn.rel = "noopener noreferrer";
+
+      fetch(`https://api.github.com/repos/${REPO}/issues?labels=comment&state=all&per_page=8&sort=created&direction=desc`)
+        .then((res) => { if (!res.ok) throw new Error(res.status); return res.json(); })
+        .then((issues) => {
+          if (!Array.isArray(issues) || !issues.length) {
+            commentList.innerHTML = '<div class="comment-empty">No comments yet — be the first!</div>';
+            return;
+          }
+          commentList.innerHTML = "";
+          issues.forEach((issue) => {
+            const div = document.createElement("div");
+            div.className = "comment";
+            const date = new Date(issue.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+            div.innerHTML = `
+              <img src="${issue.user?.avatar_url || ""}" alt="" />
+              <div>
+                <div class="comment-meta"><a href="${issue.html_url}" target="_blank" rel="noopener noreferrer">${issue.user?.login || "someone"}</a> · ${date}</div>
+                <div class="comment-body">${issue.title || ""}</div>
+              </div>
+            `;
+            commentList.appendChild(div);
           });
         })
-        .catch(() => { el.textContent = "recently"; });
+        .catch(() => {
+          commentList.innerHTML = '<div class="comment-empty">Couldn’t load comments right now.</div>';
+        });
     })();
   </script>
 
