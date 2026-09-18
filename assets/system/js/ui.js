@@ -218,6 +218,47 @@ document.addEventListener("DOMContentLoaded", () => {
     viewInfoBtn?.addEventListener("click",   () => window.open("assets/system/pages/update-info.html", "_blank"));
   }
 
+  // Appends "(shortSha)" to the footer label from the live repo's latest
+  // main-branch commit, and makes the label link to that commit on GitHub.
+  // Cached in sessionStorage briefly so repeat navigations within the same
+  // tab don't hit the GitHub API's unauthenticated rate limit needlessly.
+  (function loadLatestCommitLabel() {
+    const el = document.getElementById("footerVersion");
+    if (!el) return;
+
+    const REPO      = "wannasmile4evr/wannasmile4evr.github.io";
+    const CACHE_KEY = "ws_latest_commit_cache";
+    const CACHE_TTL_MS = 5 * 60 * 1000;
+    const baseLabel = el.textContent.trim();
+
+    const applyCommit = (sha, htmlUrl) => {
+      el.textContent = `${baseLabel} (${sha.slice(0, 7)})`;
+      el.href   = htmlUrl;
+      el.target = "_blank";
+      el.rel    = "noopener noreferrer";
+    };
+
+    let cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null"); } catch (_) {}
+    if (cached && Date.now() - cached.time < CACHE_TTL_MS) {
+      applyCommit(cached.sha, cached.htmlUrl);
+      return;
+    }
+
+    fetch(`https://api.github.com/repos/${REPO}/commits/main`)
+      .then((res) => { if (!res.ok) throw new Error(`GitHub API ${res.status}`); return res.json(); })
+      .then((data) => {
+        if (!data || !data.sha || !data.html_url) return;
+        applyCommit(data.sha, data.html_url);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+            sha: data.sha, htmlUrl: data.html_url, time: Date.now(),
+          }));
+        } catch (_) {}
+      })
+      .catch((err) => console.warn("[footer-version] failed to fetch latest commit:", err));
+  })();
+
   if (dashboardBtn && dashboardMenu) {
     dashboardMenu.style.display    = "none";
     dashboardMenu.style.opacity    = "0";

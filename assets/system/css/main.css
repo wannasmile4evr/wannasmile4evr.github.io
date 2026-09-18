@@ -292,15 +292,12 @@ align-items: center;
   filter: brightness(1.1);
 }
 
-.asset-bug-wrapper {
-  position: relative;
-  display: inline-flex;
-}
-
+/* Appended straight to <body> (not nested under #container), so it isn't
+   subject to #container div's overflow:hidden clipping or its higher-
+   specificity display/width/padding reset. Position is set inline by JS
+   from the button's getBoundingClientRect() each time it opens. */
 .asset-bug-menu {
   position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
   background: var(--aside-bg);
   border-radius: 10px;
   display: none;

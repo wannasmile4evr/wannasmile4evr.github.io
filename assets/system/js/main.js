@@ -703,6 +703,11 @@ window.addEventListener("load", () => {
     if (!container) return [];
 
     container.innerHTML = "";
+    // Bug-report menus live on document.body (to escape #container's
+    // overflow:hidden), so clearing #container above doesn't remove the
+    // previous render's copies — do that here instead.
+    document.querySelectorAll(".asset-bug-menu").forEach((el) => el.remove());
+    window._openBugMenu = null;
     const imagePromises = [];
     const frag          = document.createDocumentFragment();
     const sortMode      = getSortMode();
@@ -961,6 +966,18 @@ window.addEventListener("load", () => {
       const titleEl  = document.createElement("h3"); titleEl.textContent  = title  || "Untitled";
       const authorEl = document.createElement("p");  authorEl.textContent = author || "";
 
+      titleEl.title = "Shift+click to copy title";
+      titleEl.addEventListener("click", (e) => {
+        if (!e.shiftKey) return;
+        e.preventDefault(); e.stopPropagation();
+        const text = title || "Untitled";
+        navigator.clipboard?.writeText(text).then(() => {
+          const original = titleEl.textContent;
+          titleEl.textContent = "Copied!";
+          setTimeout(() => { titleEl.textContent = original; }, 900);
+        }).catch((err) => console.warn("[title-copy] clipboard write failed:", err));
+      });
+
       if (statusSet.has("cooked")) {
         const isDmca    = typeSet.has("dmca") || statusSet.has("dmca");
         const isBlocked = typeSet.has("blocked") || statusSet.has("blocked");
@@ -1092,9 +1109,6 @@ window.addEventListener("load", () => {
       });
       descPanel.addEventListener("mouseleave", () => descPanel.classList.remove("desc-visible"));
 
-      const bugWrapper = document.createElement("div");
-      bugWrapper.className = "asset-bug-wrapper";
-
       const bugBtn = document.createElement("button");
       bugBtn.className = "asset-action-btn asset-bug-btn";
       bugBtn.title     = `Report a bug for "${title || "asset"}"`;
@@ -1103,10 +1117,16 @@ window.addEventListener("load", () => {
       bugBtn.setAttribute("aria-haspopup", "true");
       bugBtn.setAttribute("aria-expanded", "false");
 
+      // Appended to document.body (not nested under #container) below, so
+      // #container div's overflow:hidden and higher-specificity display/
+      // width/padding reset never touch it. Position is computed from
+      // bugBtn's own rect each time it opens, so it tracks page scroll
+      // (document-flow absolute coordinates) without a scroll listener.
       const bugMenu = document.createElement("div");
       bugMenu.className = "asset-bug-menu";
       bugMenu.setAttribute("aria-hidden", "true");
       bugMenu._bugBtn = bugBtn;
+      document.body.appendChild(bugMenu);
 
       // Placeholder until the Apps Script report-collection endpoint exists —
       // logs for now so the option-click wiring doesn't need to change later.
@@ -1159,14 +1179,16 @@ window.addEventListener("load", () => {
           closeBugMenu();
         } else {
           bugMenu.style.display = "block";
+          const rect = bugBtn.getBoundingClientRect();
+          const menuWidth = bugMenu.offsetWidth || 190;
+          const left = Math.max(8, rect.right + window.scrollX - menuWidth);
+          bugMenu.style.left = `${left}px`;
+          bugMenu.style.top  = `${rect.bottom + window.scrollY + 6}px`;
           bugMenu.setAttribute("aria-hidden", "false");
           bugBtn.setAttribute("aria-expanded", "true");
           window._openBugMenu = bugMenu;
         }
       });
-
-      bugWrapper.appendChild(bugBtn);
-      bugWrapper.appendChild(bugMenu);
 
       const actionsRow = document.createElement("div");
       actionsRow.className = "card-actions";
@@ -1174,7 +1196,7 @@ window.addEventListener("load", () => {
       actionsRow.appendChild(star);
       actionsRow.appendChild(dlBtn);
       actionsRow.appendChild(descBtn);
-      actionsRow.appendChild(bugWrapper);
+      actionsRow.appendChild(bugBtn);
 
       card.append(a, titleEl, authorEl, actionsRow);
       frag.appendChild(card);
