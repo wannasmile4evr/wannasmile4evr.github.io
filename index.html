@@ -3,338 +3,279 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link id="favicon" rel="icon" href="assets/media/favicons/favicon.png"/>
+<link rel="icon" href="assets/media/favicons/favicon.png" />
 <title>WannaSmile4Evr</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0f1013;
+    color: #e8e8e8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  a { color: inherit; }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.9.0/cdn/themes/dark.css" />
-<link rel="stylesheet" href="assets/system/css/main.css" />
-<link rel="stylesheet" href="assets/system/css/widgets.css" />
-<link rel="stylesheet" href="assets/system/css/shortcuts.css" />
+  /* ---- header ---- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 24px;
+    border-bottom: 1px solid #23262e;
+    flex-wrap: wrap;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.2px;
+  }
+  .header-links {
+    display: flex;
+    gap: 18px;
+    font-size: 13px;
+  }
+  .header-links a {
+    text-decoration: none;
+    color: #a9adb8;
+    transition: color 0.2s;
+  }
+  .header-links a:hover { color: #fff; }
 
-<script>
-// Preload whichever theme is actually cached as active (see themify.js's
-// ws_theme_cache), instead of always warming up redux's images regardless
-// of what the user actually last used. Falls back to redux's own images on
-// a first-ever visit, when nothing has been cached yet.
-(function () {
-  var FALLBACK = [
-    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/headerBg.png",
-    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/quoteBg.png",
-    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/mainBg.png",
-    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/footerBg.png"
-  ];
-
-  function isPreloadableImage(v) {
-    v = (v == null ? "" : String(v)).trim();
-    return /^(https?:)?\/\//i.test(v) || v.indexOf("data:") === 0;
+  /* ---- hero ---- */
+  .hero {
+    position: relative;
+    height: min(46vw, 360px);
+    min-height: 200px;
+    background: #1a1c22 url("assets/media/themes/redux/system-media/mainBg.png") center/cover no-repeat;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15,16,19,0.15) 0%, rgba(15,16,19,0.92) 100%);
+  }
+  .hero-content {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px 26px;
+  }
+  .hero-content h1 {
+    margin: 0 0 6px;
+    font-size: clamp(26px, 4vw, 42px);
+  }
+  .hero-content p {
+    margin: 0;
+    color: #c7cad2;
+    font-size: 14px;
+    max-width: 560px;
   }
 
-  var urls = null;
-  try {
-    var activeId = (localStorage.getItem("selectedTheme") || "redux").trim().toLowerCase();
-    var cache    = JSON.parse(localStorage.getItem("ws_theme_cache") || "{}");
-    var row      = cache && typeof cache === "object" ? cache[activeId] : null;
-    if (row) urls = [row[3], row[4], row[5], row[6]].filter(isPreloadableImage);
-  } catch (_) { urls = null; }
+  /* ---- layout ---- */
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 40px;
+  }
+  @media (max-width: 720px) {
+    .page { grid-template-columns: 1fr; }
+  }
 
-  (urls && urls.length ? urls : FALLBACK).forEach(function (href) {
-    var link = document.createElement("link");
-    link.rel  = "preload";
-    link.as   = "image";
-    link.href = href;
-    document.head.appendChild(link);
-  });
-})();
+  main h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #9a9ea8;
+    border-bottom: 1px solid #23262e;
+    padding-bottom: 8px;
+    margin: 32px 0 16px;
+  }
+  main h2:first-child { margin-top: 0; }
+  main p {
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: #cfd2d9;
+    margin: 0 0 12px;
+  }
 
-// Same idea for the active gif pack (see themify.js's ws_gifpack_cache) — the
-// loader gif is the very first thing visible on load, so warm up whichever
-// pack the user actually has active instead of always fetching redux's and
-// letting it sit there until the real one swaps in.
-(function () {
-  var FALLBACK = ["assets/media/themes/redux/gif-states/loading.gif", "assets/media/themes/redux/gif-states/loaded.gif"];
+  .play-btn {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 13px 28px;
+    border-radius: 9px;
+    background: #e65a4f;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .play-btn:hover { background: #d64a3f; transform: translateY(-1px); }
 
-  var urls = null;
-  try {
-    var activeId = (localStorage.getItem("ws_active_gifpack") || "redux").trim().toLowerCase();
-    var cache    = JSON.parse(localStorage.getItem("ws_gifpack_cache") || "{}");
-    var pack     = cache && typeof cache === "object" ? cache[activeId] : null;
-    var states   = pack && pack.states ? pack.states : null;
-    if (states) {
-      urls = ["loading", "loaded"]
-        .map(function (key) { return states[key] && states[key].src; })
-        .filter(Boolean);
-    }
-  } catch (_) { urls = null; }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+  }
+  .feature-card {
+    background: #181a20;
+    border: 1px solid #23262e;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .feature-card b { display: block; font-size: 13.5px; margin-bottom: 4px; }
+  .feature-card span { font-size: 12.5px; color: #9a9ea8; }
 
-  (urls && urls.length ? urls : FALLBACK).forEach(function (href) {
-    var link = document.createElement("link");
-    link.rel  = "preload";
-    link.as   = "image";
-    link.href = href;
-    document.head.appendChild(link);
-  });
-})();
-</script>
+  .gallery {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+  .gallery img {
+    height: 130px;
+    border-radius: 8px;
+    border: 1px solid #23262e;
+    flex-shrink: 0;
+  }
 
-<link rel="preload" as="image" href="https://i.redd.it/kjektcn4myv91.png" /> <!--Graduation background image-->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" rel="stylesheet">
+  /* ---- sidebar ---- */
+  aside {
+    font-size: 13px;
+  }
+  .info-box {
+    background: #181a20;
+    border: 1px solid #23262e;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid #23262e;
+    color: #c7cad2;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row span:first-child { color: #8a8e98; }
+  .info-row a { color: #e8e8e8; text-decoration: underline dotted; }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #c7cad2;
+  }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: #6c7078;
+    border-top: 1px solid #23262e;
+  }
+  footer a { text-decoration: none; color: #9a9ea8; }
+  footer a:hover { color: #fff; }
+</style>
 </head>
+<body>
 
-<body class="ws-loading">
-
-<div id="incognitoIndicator">blob:null mode</div>
-<div id="topBar">
   <header>
-    <nav class="nav-links">
-      <a href="." target="_blank">Home</a>
-      <a href="#" title="Coming soon">Favorites</a>
-      <a href="#" title="Coming soon">Discovery</a>
-      <a href="#" title="Coming soon">Settings</a>
-      <a href="https://padlet.com/thawdabase/ankomstudios" target="_blank">Suggestions</a>
-      <a href="#" title="Coming soon">About</a>
-      <div class="pages-anchor">
-        <button class="arrowleft" onclick="prevPage()">
-          <img src="assets/media/images/header-arrows/left-arrow.png" />
-        </button>
-        <span class="page-indicator">...</span>
-        <button class="arrowright" onclick="nextPage()">
-          <img src="assets/media/images/header-arrows/right-arrow.png" />
-        </button>
-        <a href="assets/system/pages/store.html" target="_blank">Widgets</a>
-        <a href="#" title="Coming soon">NEWS</a>
-
-        <button class="mute-btn">
-          <img src="assets/media/images/audio-toggle-btn/mute.png" id="muteToggleImg" />
-        </button>
-
-        <button class="Qtype">
-          <img src="assets/media/images/qtypes-btn/Qleft.png" id="QtypeToggle" />
-        </button>
-
-        <button id="nes-btn">
-          <img src="assets/media/images/panic-btn/deny.png" alt="Toggle">
-        </button>
-
-<button id="cloak-btn">
-  <img src="assets/media/images/cloak-btn/cloaked.png" alt="CloakToggle">
-</button>
-
-      </div>
-    </nav>
-    <div class="header-controls">
-      <div class="search-box">
-        <input id="searchInputHeader" type="text" placeholder="Search..." />
-        <button id="searchBtnHeader" aria-haspopup="true" aria-expanded="false">
-          <img src="https://raw.githubusercontent.com/5lackerish/5lackerish.github.io/main/system/images/icons/search.png" />
-        </button>
-        <div id="searchCategoryMenu" class="search-category-menu" aria-hidden="true">
-          <p class="search-category-heading">Categories</p>
-          <div id="searchCategoryList" class="search-category-list"></div>
-          <p class="search-category-heading">Sub-categories</p>
-          <div id="searchSubcategoryList" class="search-category-list"></div>
-        </div>
-      </div>
-      <img id="pfp" src="https://raw.githubusercontent.com/mcmattyobriore/yogurtyooo.github.io/main/system/images/profile/smile.png" />
-      <button id="dashboardBtn">
-        <i class="fa-solid fa-bars"></i>
-      </button>
+    <div class="brand">WannaSmile4Evr</div>
+    <div class="header-links">
+      <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io" target="_blank" rel="noopener noreferrer">source</a>
+      <a href="assets/system/pages/dmca.html">dmca</a>
     </div>
   </header>
-  <div id="quoteWrapper">
-    <p id="quoteBox"></p>
-  </div>
-</div>
 
-<aside id="dashboardMenu" class="dashboard-menu">
-  <p id="dashNickname" style="opacity:0.6;font-size:0.85em;">Nickname</p>
-  <a href="#" id="openShortCuts">Shortcuts</a>
-  <a href="#" title="Coming soon">credits &amp; contributors</a>
-  <a href="#" id="clearData">Clear My Data</a>
-  <a href="https://ankomstudios.com/pages/wannasmile/" title="AnkomStudios.com">DOWNLOAD 4EVR</a>
-</aside>
-
-<div id="containerLoader">
-  <img src="assets/media/themes/redux/gif-states/loading.gif" alt="loading..." />
-</div>
-
-<main>
-  <div id="container"></div>
-</main>
-
-<button id="toTopBtn">⬆ Top</button>
-
-<button id="wsWidgetBubble" aria-label="Open widget">
-  <img id="wsWidgetIcon" src="" alt="" />
-</button>
-<div id="wsWidgetPanel">
-  <div id="wsWidgetBtns">
-    <button class="ss-panel-btn" id="wsWidgetFsBtn"    title="Fullscreen">⛶</button>
-    <button class="ss-panel-btn" id="wsWidgetMinBtn"   title="Minimize">−</button>
-    <button class="ss-panel-btn" id="wsWidgetCloseBtn" title="Close">✕</button>
-  </div>
-  <div id="wsWidgetFrameWrap"></div>
-  <div id="wsWidgetResizeHandle"></div>
-</div>
-
-<footer class="footer">
-  <div class="footer-links">
-    <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io" target="_blank" rel="noopener noreferrer">source</a>
-    <a href="assets/system/pages/dmca.html">DMCA</a>
-    <a href="#" title="Coming soon">Discord</a>
-<a href="#" id="importData">Import Data</a>
-<a href="#" id="exportData">Export Data</a>
-<a href="#" id="transData">Transfer Data</a>
-    <a href="#" id="footerVersion">WannaSmile4Evr</a>
-  </div>
-</footer>
-
-<div id="profileOverlay">
-  <div id="profileOverlayPanel">
-    <button id="profileOverlayClose" title="Close">✕</button>
-    <h2>Edit Profile</h2>
-
-    <img id="profilePreview" class="profile-preview" src="" alt="Profile Preview">
-    <div class="profile-overlay-username" id="profileOverlayUsername">Nickname</div>
-
-    <label for="profilePicInput">Change Picture:</label><br>
-    <input type="file" id="profilePicInput" accept="image/*"><br>
-
-    <button type="button" id="removePicBtn" class="overlay-btn remove-btn">Remove Picture</button>
-
-    <div id="cropContainer" style="display:none; margin-top:10px;">
-      <img id="cropPreview" style="max-width:100%; border-radius:8px;">
-      <div style="margin-top:8px;">
-        <button type="button" id="cropConfirm" class="overlay-btn">✅ Crop</button>
-        <button type="button" id="cropCancel"  class="overlay-btn">❌ Cancel</button>
-      </div>
+  <div class="hero">
+    <div class="hero-content">
+      <h1>WannaSmile4Evr</h1>
+      <p>A constantly-growing, no-signup library of browser games — built and kept alive one link at a time.</p>
     </div>
-
-    <br>
-    <label for="usernameInput">Username:</label><br>
-    <input type="text" id="usernameInput" placeholder="Enter nickname"><br>
-
-    <button type="button" id="profileSaveBtn" class="overlay-btn save-btn">Save Changes</button>
   </div>
-</div>
 
-<style>
-#profileOverlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.65);
-  z-index: 9999;
-  justify-content: center;
-  align-items: center;
-}
-#profileOverlay.visible {
-  display: flex;
-}
-#profileOverlayPanel {
-background:
-  linear-gradient(rgba(34,34,34,0.1), rgba(34,34,34,0.1)),
-  url('https://raw.githubusercontent.com/wannasmile4evr/wannasmile4evr.github.io/main/asssets/media/themes/redux/system-media/headerBg.png'),
-  #222;
+  <div class="page">
+    <main>
+      <h2>About</h2>
+      <p>
+        WannaSmile4Evr is an independent, ad-free collection of playable browser games —
+        arcade throwbacks, visual novels, oddities pulled from every corner of the web, and
+        a few in-house pages besides. No accounts, no installs: pick something and it just runs.
+      </p>
+      <p>
+        The library and its themes are rebuilt continuously, so the shelf looks a little
+        different every time you check back.
+      </p>
+      <a class="play-btn" href="assets/system/pages/main.html">Play Now →</a>
 
-background-size: cover;
-background-position: center;
-background-repeat: no-repeat;  border-radius: 16px;
-  padding: 28px 24px 24px;
-  width: 380px;
-  max-width: 95vw;
-  max-height: 90vh;
-  overflow-y: auto;
-  text-align: center;
-  box-shadow: 0 6px 32px rgba(0,0,0,.7);
-  font-family: monospace;
-  color: #fff;
-  position: relative;
-}
-#profileOverlayClose {
-  position: absolute;
-  top: 12px; right: 14px;
-  background: none; border: none;
-  color: #aaa; font-size: 18px;
-  cursor: pointer;
-  line-height: 1;
-}
-#profileOverlayClose:hover { color: #fff; }
-#profileOverlayPanel h2 {
-  margin: 0 0 14px;
-  font-size: 18px;
-}
-.profile-preview {
-  width: 200px; height: 200px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #444;
-  margin-bottom: 10px;
-  display: block;
-  margin-left: auto; margin-right: auto;
-}
-.profile-overlay-username {
-  font-size: 15px;
-  margin-bottom: 16px;
-  opacity: .8;
-}
-#profileOverlayPanel label {
-  display: block;
-  text-align: left;
-  font-size: 13px;
-  margin-bottom: 4px;
-  opacity: .75;
-}
-#profileOverlayPanel input[type="file"] {
-  margin: 6px 0 10px;
-  color: #ccc;
-  font-size: 13px;
-}
-#profileOverlayPanel input[type="text"] {
-  width: 85%;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: none;
-  margin-bottom: 14px;
-  font-size: 15px;
-  background: #333;
-  color: #fff;
-}
-.overlay-btn {
-  display: inline-block;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: bold;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin: 4px;
-  transition: transform .15s, background .15s;
-  background: #444;
-}
-.overlay-btn:hover { transform: scale(1.04); background: #555; }
-.remove-btn  { background: #555; }
-.pixel-btn   { background: #4a3d7a; }
-.pixel-btn:hover { background: #6a5daa; }
-.save-btn    { background: #c0392b; }
-.save-btn:hover { background: #e74c3c; }
-</style>
+      <h2>Features</h2>
+      <div class="feature-grid">
+        <div class="feature-card"><b>Huge library</b><span>Hundreds of games, sorted and searchable.</span></div>
+        <div class="feature-card"><b>Custom themes</b><span>Pick a look, or make your own.</span></div>
+        <div class="feature-card"><b>No sign-up</b><span>Nothing to install, nothing to create.</span></div>
+        <div class="feature-card"><b>Favorites & shortcuts</b><span>Keep what you like close at hand.</span></div>
+      </div>
 
-<script src="assets/system/js/utils.js"></script>
-<script src="assets/system/js/themify.js"></script>
-<script src="assets/system/js/sanitizer.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-<script src="assets/system/js/profile.js"></script>
-<script src="assets/system/js/settings.js"></script>
-<script src="assets/system/js/ui.js"></script>
-<script src="assets/system/js/quotes.js"></script>
-<script src="assets/system/js/main.js"></script>
-<script src="assets/system/js/boom.js"></script>
-<script src="assets/system/js/panic.js"></script>
-<script src="assets/system/js/shortcuts.js"></script>
-<script src="assets/system/js/widgets.js"></script>
-<script src="assets/system/js/data.js"></script>
-<script src="assets/system/js/gridSettings.js"></script>
+      <h2>Gallery</h2>
+      <div class="gallery">
+        <img src="assets/media/themes/redux/system-media/headerBg.png" alt="" />
+        <img src="assets/media/themes/redux/system-media/mainBg.png" alt="" />
+        <img src="assets/media/themes/redux/system-media/quoteBg.png" alt="" />
+        <img src="assets/media/themes/redux/system-media/footerBg.png" alt="" />
+      </div>
+    </main>
+
+    <aside>
+      <div class="info-box">
+        <div class="info-row"><span>Status</span><span>In development</span></div>
+        <div class="info-row"><span>Platform</span><span>Browser (HTML5)</span></div>
+        <div class="info-row"><span>Author</span><a href="https://github.com/wannasmile4evr" target="_blank" rel="noopener noreferrer">wannasmile4evr</a></div>
+        <div class="info-row"><span>Last update</span><span id="sidebarLastUpdate">—</span></div>
+        <div class="tag-row">
+          <span class="tag">arcade</span>
+          <span class="tag">collection</span>
+          <span class="tag">free</span>
+          <span class="tag">browser</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <a href="assets/system/pages/main.html">Enter the library</a> · <a href="assets/system/pages/dmca.html">DMCA</a>
+  </footer>
+
+  <script>
+    (function () {
+      const el = document.getElementById("sidebarLastUpdate");
+      if (!el) return;
+      fetch("https://api.github.com/repos/wannasmile4evr/wannasmile4evr.github.io/commits/main")
+        .then((res) => { if (!res.ok) throw new Error(res.status); return res.json(); })
+        .then((data) => {
+          const date = data?.commit?.committer?.date;
+          if (!date) return;
+          el.textContent = new Date(date).toLocaleDateString(undefined, {
+            year: "numeric", month: "short", day: "numeric",
+          });
+        })
+        .catch(() => { el.textContent = "recently"; });
+    })();
+  </script>
 
 </body>
 </html>

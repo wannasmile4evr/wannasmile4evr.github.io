@@ -214,8 +214,8 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("dismissedUpdateVersion", version);
       closePopup();
     });
-    viewUpdateBtn?.addEventListener("click", () => window.open("assets/system/pages/updates.html",     "_blank"));
-    viewInfoBtn?.addEventListener("click",   () => window.open("assets/system/pages/update-info.html", "_blank"));
+    viewUpdateBtn?.addEventListener("click", () => window.open("updates.html",     "_blank"));
+    viewInfoBtn?.addEventListener("click",   () => window.open("update-info.html", "_blank"));
   }
 
   // Appends "(shortSha)" to the footer label from the live repo's latest

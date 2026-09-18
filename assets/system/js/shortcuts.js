@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="shortcut"><span class="key">+ −</span><span class="label">Cycle your widgets</span></div>
       <div class="shortcuts-note">
         <b>1–9</b>, <b>[ ]</b>, and <b>+ −</b> do nothing until you pick something for them —
-        head to the <a href="assets/system/pages/store.html" target="_blank">Store</a> to
+        head to the <a href="store.html" target="_blank">Store</a> to
         choose your theme shortcuts, gif packs, and widgets. There's no separate Settings
         page yet — the Store is where all of that lives for now.
       </div>

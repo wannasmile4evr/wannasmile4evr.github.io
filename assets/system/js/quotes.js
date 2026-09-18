@@ -97,9 +97,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const QTYPES      = ["Qleft", "Qright", "Qrefresh"];
   const QTYPE_ICONS = {
-    Qleft:    "assets/media/images/qtypes-btn/Qleft.png",
-    Qright:   "assets/media/images/qtypes-btn/Qright.png",
-    Qrefresh: "assets/media/images/qtypes-btn/Qrefresh.png",
+    Qleft:    "../../media/images/qtypes-btn/Qleft.png",
+    Qright:   "../../media/images/qtypes-btn/Qright.png",
+    Qrefresh: "../../media/images/qtypes-btn/Qrefresh.png",
   };
   const QTYPE_KEY = "ws_qtype";
 
@@ -165,7 +165,7 @@ function parseQuotes(data) {
   }
 
   window.stickerManifest  = window.stickerManifest  || {};
-  window.stickerBasePath  = window.stickerBasePath  || "assets/media/stickers/";
+  window.stickerBasePath  = window.stickerBasePath  || "../../media/stickers/";
 
   function buildStickerImg(path, ext) {
     if (path.includes("..")) return `:${path}:`;

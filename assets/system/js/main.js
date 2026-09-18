@@ -224,7 +224,7 @@ window.addEventListener("load", () => {
       "scarleteat": "scarlet-pack/scarletEat.jpg",
       "scarletstare": "scarlet-pack/scarletStare.jpg",
     };
-    window.stickerBasePath = "assets/media/stickers/";
+    window.stickerBasePath = "../../media/stickers/";
 
     if (!window._activeFetchUrl) {
       window._activeFetchUrl = (containerMode === "dev")
@@ -999,7 +999,7 @@ window.addEventListener("load", () => {
 
       if (typeSet.has("grail")) {
         const grailEl = document.createElement("img");
-        grailEl.src = "assets/media/images/type-overlayStyles/grail.png";
+        grailEl.src = "../../media/images/type-overlayStyles/grail.png";
         grailEl.alt = "";
         grailEl.className = "grail-bg";
         wrapper.insertBefore(grailEl, wrapper.firstChild);
@@ -1034,7 +1034,7 @@ window.addEventListener("load", () => {
         const isDmca    = typeSet.has("dmca") || statusSet.has("dmca");
         const isBlocked = typeSet.has("blocked") || statusSet.has("blocked");
         if (isDmca || isBlocked) {
-          img.src = "assets/media/images/placeholders/cooked.png";
+          img.src = "../../media/images/placeholders/cooked.png";
           img.style.imageRendering = "pixelated";
         }
         card.classList.add("cooked");

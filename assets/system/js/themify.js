@@ -374,7 +374,7 @@ function _parseGifPackRow(row) {
     if (!Number.isFinite(width) || !Number.isFinite(height)) return;
 
     states[key] = {
-      src: `assets/media/themes/${id}/gif-states/${key}.gif`,
+      src: `../../media/themes/${id}/gif-states/${key}.gif`,
       width,
       height,
       pixelated: (pixRaw || "").toLowerCase() !== "false",
