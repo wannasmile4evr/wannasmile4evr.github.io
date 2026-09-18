@@ -292,6 +292,50 @@ align-items: center;
   filter: brightness(1.1);
 }
 
+.asset-bug-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.asset-bug-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--aside-bg);
+  border-radius: 10px;
+  display: none;
+  flex-direction: column;
+  min-width: 190px;
+  padding: 6px 0;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.asset-bug-menu button {
+  padding: 8px 14px;
+  color: var(--url-color);
+  font-family: monospace;
+  font-size: 12px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.asset-bug-menu button:hover {
+  color: var(--accent-color);
+  background: rgba(255,255,255,0.1);
+}
+
+.asset-bug-menu button.asset-bug-else {
+  border-top: 1px solid rgba(255,255,255,0.14);
+  margin-top: 4px;
+  padding-top: 9px;
+  opacity: 0.8;
+}
+
 .search-category-list p {
   flex-basis: 100%;
   padding: 6px 0;

@@ -771,6 +771,19 @@ window.addEventListener("load", () => {
       wrapper.appendChild(o);
     };
 
+    if (!window._bugMenuGlobalHandlerBound) {
+      window._bugMenuGlobalHandlerBound = true;
+      document.addEventListener("click", (e) => {
+        const openMenu = window._openBugMenu;
+        if (!openMenu) return;
+        if (openMenu.contains(e.target) || e.target.closest(".asset-bug-btn") === openMenu._bugBtn) return;
+        openMenu.style.display = "none";
+        openMenu.setAttribute("aria-hidden", "true");
+        if (openMenu._bugBtn) openMenu._bugBtn.setAttribute("aria-expanded", "false");
+        window._openBugMenu = null;
+      });
+    }
+
     for (const asset of domOrdered) {
       const title      = safeStr(asset.title).trim();
       const author     = safeStr(asset.author).trim();
@@ -1079,16 +1092,81 @@ window.addEventListener("load", () => {
       });
       descPanel.addEventListener("mouseleave", () => descPanel.classList.remove("desc-visible"));
 
+      const bugWrapper = document.createElement("div");
+      bugWrapper.className = "asset-bug-wrapper";
+
       const bugBtn = document.createElement("button");
       bugBtn.className = "asset-action-btn asset-bug-btn";
       bugBtn.title     = `Report a bug for "${title || "asset"}"`;
       bugBtn.innerHTML = `<i class="fa-solid fa-biohazard" aria-hidden="true"></i>`;
       bugBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      bugBtn.setAttribute("aria-haspopup", "true");
+      bugBtn.setAttribute("aria-expanded", "false");
+
+      const bugMenu = document.createElement("div");
+      bugMenu.className = "asset-bug-menu";
+      bugMenu.setAttribute("aria-hidden", "true");
+      bugMenu._bugBtn = bugBtn;
+
+      // Placeholder until the Apps Script report-collection endpoint exists —
+      // logs for now so the option-click wiring doesn't need to change later.
+      function reportBug(assetTitle, reason) {
+        console.log(`[bug-report] "${assetTitle}" -> ${reason}`);
+      }
+
+      const closeBugMenu = () => {
+        bugMenu.style.display = "none";
+        bugMenu.setAttribute("aria-hidden", "true");
+        bugBtn.setAttribute("aria-expanded", "false");
+        if (window._openBugMenu === bugMenu) window._openBugMenu = null;
+      };
+
+      const BUG_REASONS = ["Blocked", "404/Missing", "Missing Icon", "Buffer/Loading Error"];
+      const PADLET_URL  = "https://padlet.com/rhap5ody/wannasmile-suggestion-report-page-t8t6pg32hl71ri9m";
+
+      for (const reason of BUG_REASONS) {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.textContent = reason;
+        item.addEventListener("click", (e) => {
+          e.preventDefault(); e.stopPropagation();
+          reportBug(title || "asset", reason);
+          closeBugMenu();
+        });
+        bugMenu.appendChild(item);
+      }
+
+      const elseItem = document.createElement("button");
+      elseItem.type = "button";
+      elseItem.className = "asset-bug-else";
+      elseItem.textContent = "Else";
+      elseItem.addEventListener("click", (e) => {
+        e.preventDefault(); e.stopPropagation();
+        window.open(PADLET_URL, "_blank");
+        closeBugMenu();
+      });
+      bugMenu.appendChild(elseItem);
+
       bugBtn.addEventListener("click", (e) => {
         e.preventDefault(); e.stopPropagation();
-        const padletUrl = "https://padlet.com/rhap5ody/wannasmile-suggestion-report-page-t8t6pg32hl71ri9m";
-        window.open(padletUrl, "_blank");
+        const isOpen = bugMenu.style.display === "block";
+        if (window._openBugMenu && window._openBugMenu !== bugMenu) {
+          window._openBugMenu.style.display = "none";
+          window._openBugMenu.setAttribute("aria-hidden", "true");
+          if (window._openBugMenu._bugBtn) window._openBugMenu._bugBtn.setAttribute("aria-expanded", "false");
+        }
+        if (isOpen) {
+          closeBugMenu();
+        } else {
+          bugMenu.style.display = "block";
+          bugMenu.setAttribute("aria-hidden", "false");
+          bugBtn.setAttribute("aria-expanded", "true");
+          window._openBugMenu = bugMenu;
+        }
       });
+
+      bugWrapper.appendChild(bugBtn);
+      bugWrapper.appendChild(bugMenu);
 
       const actionsRow = document.createElement("div");
       actionsRow.className = "card-actions";
@@ -1096,7 +1174,7 @@ window.addEventListener("load", () => {
       actionsRow.appendChild(star);
       actionsRow.appendChild(dlBtn);
       actionsRow.appendChild(descBtn);
-      actionsRow.appendChild(bugBtn);
+      actionsRow.appendChild(bugWrapper);
 
       card.append(a, titleEl, authorEl, actionsRow);
       frag.appendChild(card);
