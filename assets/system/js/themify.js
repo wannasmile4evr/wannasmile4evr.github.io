@@ -57,7 +57,7 @@ const _ROOT_CSS = `:root {
   --header-bg: url("https://raw.githubusercontent.com/01110010-00110101/themeify/main/redux/Redux-headerbg.png");
   --quote-bg: url("https://raw.githubusercontent.com/01110010-00110101/themeify/main/redux/Redux-quotebg.png");
   --main-bg: url("https://raw.githubusercontent.com/01110010-00110101/themeify/main/redux/Redux-mainbg.png");
-  --footer-bg: url("https://wannasmile4evr.github.io./assets/media/themes/redux/footerbg.png");
+  --footer-bg: url("https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/footerBg.png");
   --aside-bg: rgba(0, 0, 0, 0.95);
   --text-color: #000;
   --url-color: #fff;
