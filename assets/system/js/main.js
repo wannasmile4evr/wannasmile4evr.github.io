@@ -1169,7 +1169,7 @@ window.addEventListener("load", () => {
 
       bugBtn.addEventListener("click", (e) => {
         e.preventDefault(); e.stopPropagation();
-        const isOpen = bugMenu.style.display === "block";
+        const isOpen = bugMenu.style.display === "flex";
         if (window._openBugMenu && window._openBugMenu !== bugMenu) {
           window._openBugMenu.style.display = "none";
           window._openBugMenu.setAttribute("aria-hidden", "true");
@@ -1178,7 +1178,7 @@ window.addEventListener("load", () => {
         if (isOpen) {
           closeBugMenu();
         } else {
-          bugMenu.style.display = "block";
+          bugMenu.style.display = "flex";
           const rect = bugBtn.getBoundingClientRect();
           const menuWidth = bugMenu.offsetWidth || 190;
           const left = Math.max(8, rect.right + window.scrollX - menuWidth);
