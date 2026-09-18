@@ -1181,7 +1181,8 @@ window.addEventListener("load", () => {
           bugMenu.style.display = "flex";
           const rect = bugBtn.getBoundingClientRect();
           const menuWidth = bugMenu.offsetWidth || 190;
-          const left = Math.max(8, rect.right + window.scrollX - menuWidth);
+          const maxLeft = window.scrollX + document.documentElement.clientWidth - menuWidth - 8;
+          const left = Math.max(8, Math.min(rect.left + window.scrollX, maxLeft));
           bugMenu.style.left = `${left}px`;
           bugMenu.style.top  = `${rect.bottom + window.scrollY + 6}px`;
           bugMenu.setAttribute("aria-hidden", "false");
