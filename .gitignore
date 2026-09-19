@@ -1,0 +1,8 @@
+# Layout mockup images — kept locally for now, not ready to commit.
+.documentation/pages/layout/assets/
+
+# Native desktop launcher (source + build artifacts + vendored WebView2
+# SDK) — local tooling for now, not part of the published site.
+launcher/
+WannaSmileExe.zip
+description.txt

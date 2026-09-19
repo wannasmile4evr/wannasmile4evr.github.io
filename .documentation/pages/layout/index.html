@@ -9,8 +9,8 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: #fdeef1;
-    color: #3a0f16;
+    background: #ffd447;
+    color: #4a3410;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   a { color: inherit; }
@@ -31,14 +31,14 @@
     width: 200px;
     height: 700px;
     background: rgba(0,0,0,0.05);
-    border: 1px dashed rgba(58,15,22,0.35);
+    border: 1px dashed rgba(74,52,16,0.35);
     z-index: 50;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     font-size: 11px;
-    color: rgba(58,15,22,0.5);
+    color: rgba(74,52,16,0.5);
     text-transform: uppercase;
     letter-spacing: 1px;
     overflow: hidden;
@@ -83,26 +83,6 @@
     .right-col { order: -1; }
   }
 
-  /* YouTube wouldn't allow embedding this video, so it's self-hosted at
-     ws.ankomstudios.com instead, using the same custom .video-player/.vp-*
-     player built for the screenshot-stack previews. .video-player's own
-     width:120%/margin-left:-10% bleed trick was tuned for the right column
-     though — neutralized here so it just fills .left-col's actual width. */
-  .yt-embed { width: 100%; margin-bottom: 8px; }
-  .yt-embed .video-player { width: 100%; margin-left: 0; }
-  .yt-subscribe-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    color: #9c3a56;
-    font-weight: 700;
-    font-size: 14px;
-    text-decoration: none;
-  }
-  .yt-subscribe-link:hover { text-decoration: underline; }
-  .yt-subscribe-link i { font-size: 18px; }
-
   .left-col h2 {
     font-size: 21px;
     font-weight: 700;
@@ -115,12 +95,6 @@
     margin: 20px 0 8px;
   }
   .left-col h3.download-heading { font-size: 22px; }
-  .left-col h4 {
-    font-size: 14px;
-    font-weight: 700;
-    margin: 16px 0 6px;
-    opacity: 0.9;
-  }
   .left-col p {
     font-size: 15.5px;
     line-height: 1.75;
@@ -152,29 +126,29 @@
     height: 48px;
     border-radius: 0;
     border: none;
-    background: #3a0f16;
-    color: #ffe3ea;
+    background: #4a3410;
+    color: #ffd447;
     font-size: 16px;
     cursor: pointer;
     transition: background 0.2s;
     z-index: 2;
   }
-  .featured-comments-nav:hover { background: #59161f; }
+  .featured-comments-nav:hover { background: #614414; }
   .featured-comments-prev { left: 8px; }
   .featured-comments-next { right: 8px; }
   .featured-comment-card {
     min-width: 0;
-    background: #fdf0f3;
+    background: #fbf3e2;
     padding: 16px 56px;
     display: flex;
     gap: 12px;
     align-items: flex-start;
   }
   .featured-comment-card img { width: 34px; height: 34px; border-radius: 7px; flex-shrink: 0; }
-  .featured-comment-meta { font-size: 12.5px; color: rgba(58,15,22,0.7); margin-bottom: 4px; }
+  .featured-comment-meta { font-size: 12.5px; color: rgba(74,52,16,0.7); margin-bottom: 4px; }
   .featured-comment-meta .comment-username-link { color: #9c3a56; font-weight: 700; }
   .featured-comment-meta .comment-votecount { color: #6b2c3a; font-weight: 700; }
-  .featured-comment-body { font-size: 14px; line-height: 1.6; color: #3a0f16; }
+  .featured-comment-body { font-size: 14px; line-height: 1.6; color: #4a3410; }
 
   /* ---- more information toggle ---- */
   .info-toggle-row { margin-top: 28px; }
@@ -184,7 +158,7 @@
     gap: 6px;
     background: none;
     border: none;
-    color: #3a0f16;
+    color: #4a3410;
     font-size: 14px;
     cursor: pointer;
     padding: 0;
@@ -194,8 +168,8 @@
   .info-panel {
     display: none;
     margin-top: 14px;
-    background: #fdeaf0;
-    border: 1px solid #e8a9bb;
+    background: #fff1c2;
+    border: 1px solid #f0c93d;
     border-radius: 10px;
     padding: 4px 16px;
   }
@@ -205,12 +179,12 @@
     justify-content: space-between;
     gap: 12px;
     padding: 10px 0;
-    border-bottom: 1px solid #e8a9bb;
+    border-bottom: 1px solid #f0c93d;
     font-size: 13px;
   }
   .info-row:last-child { border-bottom: none; }
   .info-row span:first-child { opacity: 0.65; }
-  .info-row a { color: #3a0f16; text-decoration: underline dotted; }
+  .info-row a { color: #4a3410; text-decoration: underline dotted; }
   .info-row .tag-row { justify-content: flex-end; }
 
   .tag-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
@@ -232,7 +206,7 @@
      that scrolls internally once comments overflow that height, rather
      than growing the container taller. */
   .comment-section {
-    background: #fdf0f3;
+    background: #fbf3e2;
     border: none;
     border-radius: 0;
     padding: 20px 24px;
@@ -247,14 +221,14 @@
     min-height: 90px;
     padding: 12px 14px;
     border-radius: 0;
-    border: 1px solid #e0a8ba;
+    border: 1px solid #d9a91f;
     background: #fff;
-    color: #3a0f16;
+    color: #4a3410;
     font-size: 14px;
     font-family: inherit;
     resize: none;
   }
-  .comment-compose textarea::placeholder { color: #b97b8f; }
+  .comment-compose textarea::placeholder { color: #a5813a; }
   /* Post button only shows up while actively composing — focused, or once
      there's text in the box — instead of sitting there permanently. */
   .comment-post-btn {
@@ -279,10 +253,10 @@
     display: none;
     margin-top: 10px;
     font-size: 13px;
-    color: #a83b52;
+    color: #8a3b3b;
   }
   .comment-login-note.visible { display: block; }
-  .comment-login-note a { color: #a83b52; font-weight: 700; text-decoration: underline; }
+  .comment-login-note a { color: #8a3b3b; font-weight: 700; text-decoration: underline; }
 
   /* Custom scrollbar (visible at the right edge, not just the OS default)
      plus mobile treatment: -webkit-overflow-scrolling gives it momentum
@@ -299,20 +273,20 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     scrollbar-width: thin;
-    scrollbar-color: #9c3a56 #f3dde3;
+    scrollbar-color: #9c3a56 #e9dcbd;
   }
   .comment-list::-webkit-scrollbar { width: 8px; }
-  .comment-list::-webkit-scrollbar-track { background: #f3dde3; }
+  .comment-list::-webkit-scrollbar-track { background: #e9dcbd; }
   .comment-list::-webkit-scrollbar-thumb { background: #9c3a56; }
   .comment-list::-webkit-scrollbar-thumb:hover { background: #7e3047; }
-  .comment { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid #f3dde3; }
+  .comment { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid #e9dcbd; }
   .comment:last-child { border-bottom: none; }
   .comment img { width: 34px; height: 34px; border-radius: 7px; flex-shrink: 0; }
   /* color (not opacity) for the muted base text, so nested elements below
      can render genuinely darker/fully-opaque instead of being capped by
      an ancestor's opacity compositing (a child's own opacity can only
      make it more transparent than its parent, never less). */
-  .comment .comment-meta { font-size: 12.5px; color: rgba(58,15,22,0.7); margin-bottom: 4px; }
+  .comment .comment-meta { font-size: 12.5px; color: rgba(74,52,16,0.7); margin-bottom: 4px; }
   .comment .comment-meta .comment-username-link { font-weight: 700; color: #9c3a56; }
   /* Usernames are anchors that go nowhere (href="#", click prevented in
      JS) purely so they look/act clickable — no underline, and no text
@@ -330,7 +304,7 @@
      gradient sweeps across the text on a loop rather than sitting still. */
   .comment .comment-meta .comment-username-link.premium-username,
   .featured-comment-meta .comment-username-link.premium-username {
-    background: linear-gradient(90deg, #9c3a56, #ffe3ea, #9c3a56, #ffe3ea, #9c3a56);
+    background: linear-gradient(90deg, #9c3a56, #ffd447, #9c3a56, #ffd447, #9c3a56);
     background-size: 300% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -350,7 +324,7 @@
     width: 22px;
     height: 46px;
     flex-shrink: 0;
-    border: 1px solid #e8c3ce;
+    border: 1px solid #d9c29a;
     overflow: hidden;
   }
   /* Each button IS exactly half the container (width:100%/height:50%), so
@@ -367,12 +341,12 @@
     padding: 0;
     font-size: 10px;
     line-height: 1;
-    color: #b97b8f;
+    color: #a5813a;
     opacity: 0.6;
     cursor: default;
     transition: background 0.15s;
   }
-  .vote-btn:first-child { border-bottom: 1px solid #e8c3ce; }
+  .vote-btn:first-child { border-bottom: 1px solid #d9c29a; }
   .vote-btn:hover { background: rgba(156,58,86,0.15); }
 
   /* ---- right column ---- */
@@ -401,106 +375,22 @@
     gap: 6px;
   }
 
-  /* profile picture — sits before the hamburger, always visible. This is
-     the real #pfp element from assets/system/pages/main.html (profile.js
-     wires its click to open #profileOverlay below and sets its src from
-     localStorage), just resized to fit this slot instead of main.html's
-     header treatment. */
+  /* profile placeholder — sits before the hamburger, always visible;
+     intentionally inert (disabled) until account features exist */
   .profile-slot {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 42px;
     height: 42px;
     border-radius: 7px;
-    object-fit: cover;
-    background: #3a0f16;
+    background: #4a3410;
+    color: #ffd447;
     border: none;
     flex-shrink: 0;
-    cursor: pointer;
+    opacity: 0.55;
+    cursor: default;
   }
-
-  /* ---- profile overlay (ported from assets/system/pages/main.html, same
-     ids/behavior — ../js/profile.js there becomes assets/system/js/
-     profile.js here since this file sits at the repo root instead of
-     assets/system/pages/) ---- */
-  #profileOverlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.65);
-    z-index: 9999;
-    justify-content: center;
-    align-items: center;
-  }
-  #profileOverlay.visible { display: flex; }
-  #profileOverlayPanel {
-    background:
-      linear-gradient(rgba(34,34,34,0.1), rgba(34,34,34,0.1)),
-      url('https://raw.githubusercontent.com/wannasmile4evr/wannasmile4evr.github.io/main/asssets/media/themes/redux/system-media/headerBg.png'),
-      #222;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius: 16px;
-    padding: 28px 24px 24px;
-    width: 380px;
-    max-width: 95vw;
-    max-height: 90vh;
-    overflow-y: auto;
-    text-align: center;
-    box-shadow: 0 6px 32px rgba(0,0,0,.7);
-    font-family: monospace;
-    color: #fff;
-    position: relative;
-  }
-  #profileOverlayClose {
-    position: absolute;
-    top: 12px; right: 14px;
-    background: none; border: none;
-    color: #aaa; font-size: 18px;
-    cursor: pointer;
-    line-height: 1;
-  }
-  #profileOverlayClose:hover { color: #fff; }
-  #profileOverlayPanel h2 { margin: 0 0 14px; font-size: 18px; }
-  .profile-preview {
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #444;
-    margin-bottom: 10px;
-    display: block;
-    margin-left: auto; margin-right: auto;
-  }
-  .profile-overlay-username { font-size: 15px; margin-bottom: 16px; opacity: .8; }
-  #profileOverlayPanel label { display: block; text-align: left; font-size: 13px; margin-bottom: 4px; opacity: .75; }
-  #profileOverlayPanel input[type="file"] { margin: 6px 0 10px; color: #ccc; font-size: 13px; }
-  #profileOverlayPanel input[type="text"] {
-    width: 85%;
-    padding: 8px 10px;
-    border-radius: 6px;
-    border: none;
-    margin-bottom: 14px;
-    font-size: 15px;
-    background: #333;
-    color: #fff;
-  }
-  .overlay-btn {
-    display: inline-block;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin: 4px;
-    transition: transform .15s, background .15s;
-    background: #444;
-  }
-  .overlay-btn:hover { transform: scale(1.04); background: #555; }
-  .remove-btn { background: #555; }
-  .save-btn { background: #c0392b; }
-  .save-btn:hover { background: #e74c3c; }
   .hamburger-btn {
     display: flex;
     align-items: center;
@@ -508,8 +398,8 @@
     width: 0;
     height: 42px;
     border-radius: 7px;
-    background: #3a0f16;
-    color: #ffe3ea;
+    background: #4a3410;
+    color: #ffd447;
     border: none;
     cursor: pointer;
     flex-shrink: 0;
@@ -520,7 +410,7 @@
     pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s ease, width 0.25s ease, background 0.2s ease;
   }
-  .hamburger-btn:hover { background: #59161f; }
+  .hamburger-btn:hover { background: #614414; }
 
   .floating-actions.collapsed .hamburger-btn {
     opacity: 1;
@@ -574,7 +464,7 @@
     right: 0;
     gap: 0;
     min-width: 220px;
-    background: #3a0f16;
+    background: #4a3410;
     box-shadow: 0 6px 16px rgba(0,0,0,0.3);
   }
   .floating-actions.collapsed.dropdown-open .rest-buttons .action-pill {
@@ -583,7 +473,7 @@
     padding: 14px 18px;
     border-radius: 0;
     box-shadow: none;
-    border-bottom: 1px solid rgba(255,227,234,0.15);
+    border-bottom: 1px solid rgba(255,212,71,0.15);
   }
   .floating-actions.collapsed.dropdown-open .rest-buttons .action-pill:last-child {
     border-bottom: none;
@@ -592,7 +482,7 @@
   /* ---- live stats bar ----
      A real full-width header row (100% of the viewport, not a floating
      sidebar box) sitting between .header (hero image) and .page (main
-     content), in normal document flow. Stat info sits left, "Rate project"
+     content), in normal document flow. Stat info sits left, "Rate game"
      sits right. No border-radius, square edges. */
   .stats-bar {
     width: 100%;
@@ -632,7 +522,7 @@
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
   }
-  .stats-bar-rate-btn:hover { background: #ffe3ea; color: #3a0f16; }
+  .stats-bar-rate-btn:hover { background: #ffd447; color: #4a3410; }
   .stats-bar-download-btn {
     flex-shrink: 0;
     display: inline-flex;
@@ -656,9 +546,9 @@
     gap: 8px;
     padding: 18px 10px;
     border-radius: 7px;
-    background: #3a0f16;
+    background: #4a3410;
     border: none;
-    color: #ffe3ea;
+    color: #ffd447;
     text-decoration: none;
     font-size: 13px;
     cursor: pointer;
@@ -666,23 +556,10 @@
     text-align: right;
     transition: background 0.2s;
   }
-  .action-pill:hover { background: #59161f; }
+  .action-pill:hover { background: #614414; }
   .action-pill svg { flex-shrink: 0; }
 
   .screenshot-stack { display: flex; flex-direction: column; gap: 10px; }
-
-  .sidebar-extra {
-    background: #fdf0f3;
-    padding: 16px 20px;
-  }
-  .sidebar-extra h4 {
-    margin: 0 0 8px;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.75;
-  }
-  .sidebar-extra p { margin: 0; font-size: 13.5px; line-height: 1.65; }
   .screenshot-stack img {
     width: 120%;
     margin-left: -10%;
@@ -692,71 +569,12 @@
     display: block;
     cursor: pointer;
   }
-  /* Video previews, hosted at ws.ankomstudios.com — same full-bleed sizing
-     as the screenshot images, just with native controls instead of the
-     click-to-enlarge lightbox (querySelectorAll("img") in the script below
-     only ever targets <img>, so these sit outside that carousel/rating
-     system entirely — they play in place). */
-  /* ---- custom video player (previews hosted at ws.ankomstudios.com) ----
-     Native controls are stripped off the <video> itself; this bar is a
-     from-scratch play/seek/volume/fullscreen UI in the site's palette
-     instead. Same full-bleed sizing the screenshots use, just moved to
-     the wrapper since the video no longer owns it alone. */
-  .video-player {
-    position: relative;
-    width: 120%;
-    margin-left: -10%;
-  }
-  .vp-video { width: 100%; display: block; background: #000; }
-  .vp-controls {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: linear-gradient(0deg, rgba(0,0,0,0.75), rgba(0,0,0,0));
-    color: #fff;
-  }
-  .vp-btn {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: none;
-    background: none;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    opacity: 0.9;
-    transition: opacity 0.15s;
-  }
-  .vp-btn:hover { opacity: 1; }
-  .vp-time { font-size: 11px; font-variant-numeric: tabular-nums; opacity: 0.85; flex-shrink: 0; }
-  .vp-progress {
-    flex: 1;
-    height: 5px;
-    background: rgba(255,255,255,0.25);
-    cursor: pointer;
-  }
-  .vp-progress-fill {
-    height: 100%;
-    width: 0%;
-    background: #9c3a56;
-  }
-  .vp-volume {
-    width: 60px;
-    accent-color: #9c3a56;
-    flex-shrink: 0;
-  }
 
-  /* ---- rate-this-project modal (shares the lightbox's overlay look) ---- */
+  /* ---- rate-this-game modal (shares the lightbox's overlay look) ---- */
   .rate-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(26,8,12,0.55);
+    background: rgba(20, 15, 5, 0.55);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     display: none;
@@ -769,11 +587,11 @@
   .rate-overlay.visible { opacity: 1; }
   .rate-modal {
     width: min(320px, calc(100% - 40px));
-    background: #3a0f16;
+    background: #4a3410;
     border-radius: 12px;
     padding: 24px;
     text-align: center;
-    color: #ffe3ea;
+    color: #ffd447;
     transform: scale(0.95) translateY(8px);
     transition: transform 0.25s ease;
   }
@@ -789,7 +607,7 @@
   .lightbox-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(26,8,12,0.55);
+    background: rgba(20, 15, 5, 0.55);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     display: none;
@@ -909,8 +727,8 @@
   }
   .reaction-pill:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
   .reaction-pill.active {
-    background: rgba(156,58,86,0.25);
-    border-color: #9c3a56;
+    background: rgba(255, 212, 71, 0.25);
+    border-color: #ffd447;
   }
   .reaction-pill .reaction-count { font-size: 12px; opacity: 0.85; }
 
@@ -947,35 +765,9 @@
   <div class="floating-actions" id="floatingActions">
     <div class="action-stack" id="actionStack">
       <div class="first-row">
-        <img class="profile-slot" id="pfp" alt="Profile" title="Edit profile" src="" />
-        <div id="profileOverlay">
-          <div id="profileOverlayPanel">
-            <button id="profileOverlayClose" title="Close">✕</button>
-            <h2>Edit Profile</h2>
-
-            <img id="profilePreview" class="profile-preview" src="" alt="Profile Preview">
-            <div class="profile-overlay-username" id="profileOverlayUsername">Nickname</div>
-
-            <label for="profilePicInput">Change Picture:</label><br>
-            <input type="file" id="profilePicInput" accept="image/*"><br>
-
-            <button type="button" id="removePicBtn" class="overlay-btn remove-btn">Remove Picture</button>
-
-            <div id="cropContainer" style="display:none; margin-top:10px;">
-              <img id="cropPreview" style="max-width:100%; border-radius:8px;">
-              <div style="margin-top:8px;">
-                <button type="button" id="cropConfirm" class="overlay-btn">✅ Crop</button>
-                <button type="button" id="cropCancel" class="overlay-btn">❌ Cancel</button>
-              </div>
-            </div>
-
-            <br>
-            <label for="usernameInput">Username:</label><br>
-            <input type="text" id="usernameInput" placeholder="Enter nickname"><br>
-
-            <button type="button" id="profileSaveBtn" class="overlay-btn save-btn">Save Changes</button>
-          </div>
-        </div>
+        <button class="profile-slot" id="profileSlot" type="button" disabled aria-label="Profile (coming soon)" title="Profile — coming soon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </button>
         <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Menu">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
@@ -995,18 +787,18 @@
         </a>
         <button class="action-pill" type="button" id="rateBtn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          Rate this project
+          Rate this game
         </button>
         <a class="action-pill" href="https://itch.io/games-like/4967352" target="_blank" rel="noopener noreferrer">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-          Related projects
+          Related games
         </a>
       </div>
     </div>
   </div>
 
   <div class="header">
-    <img src=".documentation/pages/layout/assets/wannasmile-header.png" alt="WannaSmile4Evr" />
+    <img src="assets/headerExp.jpg" alt="My VTuber Rival is Actually Cute?!" />
   </div>
 
   <div class="stats-bar" id="statsBar">
@@ -1014,10 +806,10 @@
       <span class="stats-bar-mini"><i class="fa-solid fa-eye"></i> <span id="statViewers">—</span></span>
       <span class="stats-bar-mini"><i class="fa-solid fa-eye-slash"></i> <span id="statGlobalViews">4,821</span></span>
       <span class="stats-bar-mini"><i class="fa-solid fa-comment"></i> <span id="statComments">—</span></span>
-      <span class="stats-bar-mini"><span class="stats-bar-avg-stars" id="avgRatingStars"></span> <span id="statProjectRating">—</span></span>
+      <span class="stats-bar-mini"><span class="stats-bar-avg-stars" id="avgRatingStars"></span> <span id="statGameRating">—</span></span>
     </div>
     <div class="stats-bar-actions">
-      <button type="button" class="stats-bar-rate-btn" id="sideRateProjectBtn">Rate project</button>
+      <button type="button" class="stats-bar-rate-btn" id="sideRateGameBtn">Rate game</button>
       <button type="button" class="stats-bar-download-btn" id="statsBarDownloadBtn">
         <i class="fa-solid fa-download"></i> Download
       </button>
@@ -1026,104 +818,33 @@
 
   <div class="page">
     <div class="left-col">
-      <div class="yt-embed">
-        <div class="video-player">
-          <video class="vp-video" src="https://ws.ankomstudios.com/previews/videos/WannaSmile4Evr.mp4" preload="metadata" playsinline></video>
-          <div class="vp-controls">
-            <button type="button" class="vp-btn vp-play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
-            <span class="vp-time vp-time-current">0:00</span>
-            <div class="vp-progress"><div class="vp-progress-fill"></div></div>
-            <span class="vp-time vp-time-duration">0:00</span>
-            <button type="button" class="vp-btn vp-mute" aria-label="Mute"><i class="fa-solid fa-volume-high"></i></button>
-            <input type="range" class="vp-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume" />
-            <button type="button" class="vp-btn vp-fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand"></i></button>
-          </div>
-        </div>
-      </div>
-      <a class="yt-subscribe-link" href="https://youtu.be/CKHagS16WW0?si=FRPyR6D0DkVuJHSt" target="_blank" rel="noopener noreferrer">
-        <i class="fa-brands fa-youtube"></i> Watch on YouTube &amp; subscribe!
-      </a>
-      <h2>They said it wouldn't come...WannaSmile, now operated by Ankom Studios, presents Version: Forever.</h2>
+      <h2>Your long-standing VTuber rival is headed to the same convention as you...but wait, she's actually cute IRL?!</h2>
       <p>
-        <em>Ankom Studios 2026, comprised of the Yeezy Night Funkin Team.</em>
+        Become a rising indie VTuber and finally visit the biggest convention in the industry —
+        but a few drinks too deep into a networking party, you realize you've actually befriended
+        your biggest online rival! Will this crash into a scandal, or will true love bloom instead?
       </p>
       <p>
-        With an ambitious 20 page plan, we bring to you an overhaul of content within the library. More than just projects, Version Forever includes the following:
+        <em>My VTuber Rival is Actually Cute?!</em> is a short slice-of-life yuri visual novel
+        love letter to the VTuber &amp; streaming industry.
       </p>
 
-      <h3>Pages</h3>
-
-      <h4>Home</h4>
+      <h3>Demo features:</h3>
       <ul>
-        <li>Previously "index" now moved, and named after its header name.</li>
-        <li>20 planned pages of assets (75 assets per-page)</li>
-        <li>Updated &amp; bug fix implementations: Friday Night Funkin', FNAF series, Smash Karts, 1v1.LOL, etc.</li>
-        <li>Search now includes the unimplemented "Categories" &amp; "sub categories" filtering, along with search specific quotes, was it needed? Yes sorta, so shut up..</li>
-        <li>Removed favorites, wait WHAT?? Chill.. Favorites has been moved into Home, as an icon toggle alike audio, qType, panic, and cloak :)</li>
+        <li>customize your female protagonist, including your VTuber streaming preferences, in-game textbox, and more</li>
+        <li>meet your love interest Anne, who is definitely not secretly your VTuber rival Angelilyca</li>
+        <li>under an hour prelude to a comfy romance, created by industry veterans</li>
       </ul>
 
-      <h4>Favorites</h4>
+      <h3>Full game features:</h3>
       <ul>
-        <li>Previously in its own page, now merged into Home.</li>
-        <li>Same functionality, might I say even better, no need to open a separate tab to view your saved assets! They appear as is here, and they are still sorted by their own paging because why not?</li>
+        <li>customize your female protagonist's VTuber persona and IRL design, including your streaming preferences, in-game textbox, and more</li>
+        <li>1 incredibly cute girl to fall in love with</li>
+        <li>over 30k words of a comfy romance, created by industry veterans</li>
       </ul>
-
-      <h4>Discovery</h4>
-      <ul>
-        <li>Previously broke, chud, low tier jayden, now awesome, works, and has alphabetic sortings, and the categories/sub categories specific to it now are in Home :(/)</li>
-        <li>Before the asset previews were stylized to be cut off, now they display in their full form, why? Because the library is being expanded by twice the amount!!</li>
-      </ul>
-
-      <h4>Suggestions</h4>
-      <ul>
-        <li>Suggestions page, new Padlet URL! and hazard/report feature has had a new change, they now no longer are tied specifically offplatform, especially good if Padlet is not your thing.</li>
-        <li>Suggestions work as ever, tell me what you want, and it may be added :)</li>
-      </ul>
-
-      <h4>NEWS</h4>
-      <ul>
-        <li>News previously didn't exist, let me introduce you to greatness..</li>
-        <li>All news about Ankom Studios, Yeezy Night Funkin, and of course-- WannaSmile is now available offplatform to our domain at <a href="https://ankomstudios.com" target="_blank" rel="noopener noreferrer">https://ankomstudios.com</a>!</li>
-        <li>I won't give you any spoilers but check it out if you're genuinely interested :p</li>
-      </ul>
-
-      <h4>STORE</h4>
-      <ul>
-        <li>A store? Who ever asked for that.. but of course, it's not paid.</li>
-        <li>WannaSmile was and will remain free, this new store is just a better way to distribute modificational changes towards the site, personification is key!</li>
-        <li>Widgets, backgrounds &amp; themes, and individual gif packs are currently available.</li>
-        <li>Previously; gif packs were tied to themes, now they can be further customized, choose any theme and not worry if 1 gif pack is cuter, awesomer, or cooler, choose!</li>
-        <li>Widgets are massively updated from last time, previously we only had SoundScape, which is a very great widget which provides comfortable sound &amp; sequence.</li>
-        <li>New widgets consist of a digital pet, randomizer wheel, coinflip &amp; Owourency, why? idk well you figure that out xd</li>
-      </ul>
-
-      <h4>credits</h4>
-      <ul>
-        <li>Page dedicated to libraries used, sources &amp; contributors.</li>
-        <li>Like GitHub, we will now display a contrib grid at the credits page!</li>
-      </ul>
-
-      <h4>DMCA</h4>
-      <ul>
-        <li>Dedicated place to reach out and file a takedown request for any asset of which you can provide documentation of affiliation.</li>
-        <li>Nothing much here really.</li>
-      </ul>
-
-      <h3>Backend and features!</h3>
-      <p><b>The nerdy part, read if ur interested.</b></p>
-      <ul>
-        <li>WannaSmile now has Supabase enabled for live user tracking, and Cloudflare for database/bucket asset storage. Still continuing to use GS as it's lightweight, free and generally better than base .json, the new stuff is the expanded GBA &amp; emulator library, and the user backend &amp; comment section functionality. Notice how this page looks like itch.io?</li>
-        <li>Developed a new way to distribute emulated assets, introducing "Simulate.Ws"</li>
-        <li>In development: aside webpage loading through request and receiving responses of https webpage data.</li>
-      </ul>
-
-      <h3>NOTE</h3>
-      <p>
-        WannaSmile now operates under ticketed usage, ticket approval is permanent, once a ticket is created, you now own that ticket, the status of your ticket may change due to your activity in comments, and behavior, the 1st 50 tickets will be auto-approved, those after will have to check if they've been approved, a ticket is required for practically everything inside of WannaSmile but is to avoid bot traffic &amp; you won't even have to ever use it after its creation and approval thereof.
-      </p>
 
       <h3 class="download-heading">Download</h3>
-<iframe src="https://itch.io/embed/5025954" frameborder="0" width="552" height="167"><a href="https://ankomstudios.itch.io/wannasmile">WannaSmile by ankomstudios</a></iframe>
+<iframe height="167" frameborder="0" src="https://itch.io/embed/4967352" width="552"><a href="https://vnstudioelan.itch.io/my-vtuber-rival-is-actually-cute">My VTuber Rival is Actually Cute?! by Studio Élan</a></iframe>
 
       <h3>Featured comments</h3>
       <div class="featured-comments" id="featuredComments">
@@ -1140,20 +861,20 @@
           </svg>
         </button>
         <div class="info-panel" id="infoPanel">
-          <div class="info-row"><span>Updated</span><span>Sept 19th 2026</span></div>
-          <div class="info-row"><span>Published</span><span>Sept 21st 2026</span></div>
-          <div class="info-row"><span>Status</span><span>Up to date.</span></div>
-          <div class="info-row"><span>Platforms</span><span>Windows, chrome</span></div>
-          <div class="info-row"><span>Rating</span><span>0 (0 ratings, rate this project for a surprise :v)</span></div>
-          <div class="info-row"><span>Author</span><span>McMatty Obriore</span></div>
-          <div class="info-row"><span>Genre</span><span>Informational</span></div>
+          <div class="info-row"><span>Updated</span><span>12 days ago</span></div>
+          <div class="info-row"><span>Published</span><span>15 days ago</span></div>
+          <div class="info-row"><span>Status</span><span>In development</span></div>
+          <div class="info-row"><span>Platforms</span><span>Windows, macOS, Linux</span></div>
+          <div class="info-row"><span>Rating</span><span>4.9 (14 ratings)</span></div>
+          <div class="info-row"><span>Author</span><a href="https://vnstudioelan.itch.io" target="_blank" rel="noopener noreferrer">Studio Élan</a></div>
+          <div class="info-row"><span>Genre</span><span>Visual Novel</span></div>
           <div class="info-row">
             <span>Tags</span>
             <div class="tag-row">
-              <span class="tag">library</span>
-              <span class="tag">open source</span>
-              <span class="tag">Ankom Studios</span>
-              <span class="tag">WannaSmile4Evr</span>
+              <span class="tag">Anime</span>
+              <span class="tag">Cozy</span>
+              <span class="tag">Romance</span>
+              <span class="tag">Yuri</span>
             </div>
           </div>
         </div>
@@ -1185,7 +906,7 @@
               <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
               <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
             </div>
-            <img src=".documentation/pages/layout/assets/expfp1.jpg" alt="" />
+            <img src="assets/expfp1.jpg" alt="" />
             <div>
               <div class="comment-meta"><a href="#" class="comment-username-link">callunavulgaris</a> · 6 days ago <span class="comment-votecount">(+7/-1)</span></div>
               <div class="comment-body">Angelilyca is way too relatable, 10/10 rival design.</div>
@@ -1196,7 +917,7 @@
               <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
               <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
             </div>
-            <img src=".documentation/pages/layout/assets/expfp2.jpg" alt="" />
+            <img src="assets/expfp2.jpg" alt="" />
             <div>
               <div class="comment-meta"><a href="#" class="comment-username-link">cherryfeatherr</a> · 8 days ago <span class="comment-votecount">(+22/-4)</span></div>
               <div class="comment-body">The convention lobby background art is gorgeous, hope we get more scenes like that in the full release.</div>
@@ -1218,7 +939,7 @@
               <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
               <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
             </div>
-            <img src=".documentation/pages/layout/assets/expfp3.jpg" alt="" />
+            <img src="assets/expfp3.jpg" alt="" />
             <div>
               <div class="comment-meta"><a href="#" class="comment-username-link">moonpetal_frog</a> · 12 days ago <span class="comment-votecount">(+15/-2)</span></div>
               <div class="comment-body">the customization options in the demo were so much fun, spent way too long in the fit check screen honestly</div>
@@ -1229,10 +950,10 @@
               <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
               <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
             </div>
-            <img src=".documentation/pages/layout/assets/expfp4.gif" alt="" />
+            <img src="assets/expfp4.gif" alt="" />
             <div>
               <div class="comment-meta"><a href="#" class="comment-username-link premium-username">starr_dreamz</a> · 1 day ago <span class="comment-votecount">(+19/-2)</span></div>
-              <div class="comment-body">The reflection lighting during the escalator scene is unreal, this project's presentation punches way above "demo" weight.</div>
+              <div class="comment-body">The reflection lighting during the escalator scene is unreal, this game's presentation punches way above "demo" weight.</div>
             </div>
           </div>
         </div>
@@ -1242,57 +963,28 @@
 
     <div class="right-col">
       <div class="screenshot-stack" id="screenshotStack">
-        <div class="video-player">
-          <video class="vp-video" src="https://ws.ankomstudios.com/previews/videos/gta-advance-pt1.mp4" preload="metadata" playsinline></video>
-          <div class="vp-controls">
-            <button type="button" class="vp-btn vp-play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
-            <span class="vp-time vp-time-current">0:00</span>
-            <div class="vp-progress"><div class="vp-progress-fill"></div></div>
-            <span class="vp-time vp-time-duration">0:00</span>
-            <button type="button" class="vp-btn vp-mute" aria-label="Mute"><i class="fa-solid fa-volume-high"></i></button>
-            <input type="range" class="vp-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume" />
-            <button type="button" class="vp-btn vp-fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand"></i></button>
-          </div>
-        </div>
-        <div class="video-player">
-          <video class="vp-video" src="https://ws.ankomstudios.com/previews/videos/gta-advance-pt2.mp4" preload="metadata" playsinline></video>
-          <div class="vp-controls">
-            <button type="button" class="vp-btn vp-play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
-            <span class="vp-time vp-time-current">0:00</span>
-            <div class="vp-progress"><div class="vp-progress-fill"></div></div>
-            <span class="vp-time vp-time-duration">0:00</span>
-            <button type="button" class="vp-btn vp-mute" aria-label="Mute"><i class="fa-solid fa-volume-high"></i></button>
-            <input type="range" class="vp-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume" />
-            <button type="button" class="vp-btn vp-fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand"></i></button>
-          </div>
-        </div>
-        <img src=".documentation/pages/layout/assets/4everPreview.png" alt="WannaSmile4Evr library" data-title="WannaSmile4Evr library" />
-        <img src=".documentation/pages/layout/assets/graduationPreview.png" alt="Graduation theme" data-title="Graduation theme" />
-        <img src=".documentation/pages/layout/assets/profileModalPreview.png" alt="Edit Profile modal" data-title="Edit Profile modal" />
-        <img src=".documentation/pages/layout/assets/soundscapePreview.png" alt="Soundscape widget" data-title="Soundscape widget" />
-      </div>
-
-      <div class="sidebar-extra">
-        <h4>Extra</h4>
-        <p>
-          I've introduced ads to the index page, cool right? Well sorta, anyways DM ME! If you want an ad posted up, an ad box is $1.00 USD, and lasts for a week, and to get your very own widget added to the site, that's free :) To support WannaSmile &amp; Ankom Studios, you should go ahead and go to the socials page! Help out by listening to our music on Spotify, and watching our videos on YouTube. To contribute to WannaSmile or related projects under Ankom Studios, join the Discord! Help us grow the content hosted here, and keep on smiling.
-        </p>
+        <img src="assets/prevExp.png" alt="Preview 1" data-title="Preview 1" />
+        <img src="assets/prevExp2.png" alt="Preview 2" data-title="Preview 2" />
+        <img src="assets/prevExp3.png" alt="Preview 3" data-title="Preview 3" />
+        <img src="assets/prevExp4.png" alt="Preview 4" data-title="Preview 4" />
+        <img src="assets/prevExp5.png" alt="Preview 5" data-title="Preview 5" />
+        <img src="assets/prevExp6.png" alt="Preview 6" data-title="Preview 6" />
       </div>
     </div>
   </div>
 
-  <div class="rate-overlay" id="projectRateOverlay">
+  <div class="rate-overlay" id="gameRateOverlay">
     <div class="rate-modal">
-      <h3>Rate this project</h3>
+      <h3>Rate this game</h3>
       <p>Submitted to a shared, public tally — separate from the per-preview ratings above.</p>
-      <div class="rate-stars" id="projectRateStars">
-        <img data-v="1" src=".documentation/pages/layout/assets/emptystar.png" alt="1 star" />
-        <img data-v="2" src=".documentation/pages/layout/assets/emptystar.png" alt="2 stars" />
-        <img data-v="3" src=".documentation/pages/layout/assets/emptystar.png" alt="3 stars" />
-        <img data-v="4" src=".documentation/pages/layout/assets/emptystar.png" alt="4 stars" />
-        <img data-v="5" src=".documentation/pages/layout/assets/emptystar.png" alt="5 stars" />
+      <div class="rate-stars" id="gameRateStars">
+        <img data-v="1" src="assets/emptystar.png" alt="1 star" />
+        <img data-v="2" src="assets/emptystar.png" alt="2 stars" />
+        <img data-v="3" src="assets/emptystar.png" alt="3 stars" />
+        <img data-v="4" src="assets/emptystar.png" alt="4 stars" />
+        <img data-v="5" src="assets/emptystar.png" alt="5 stars" />
       </div>
-      <div class="rate-thanks" id="projectRateThanks">Thanks for rating!</div>
+      <div class="rate-thanks" id="gameRateThanks">Thanks for rating!</div>
     </div>
   </div>
 
@@ -1305,11 +997,11 @@
       <img class="lightbox-img" id="lightboxImg" src="" alt="" />
 
       <div class="lightbox-stars" id="lightboxStars">
-        <img data-v="1" src=".documentation/pages/layout/assets/emptystar.png" alt="1 star" />
-        <img data-v="2" src=".documentation/pages/layout/assets/emptystar.png" alt="2 stars" />
-        <img data-v="3" src=".documentation/pages/layout/assets/emptystar.png" alt="3 stars" />
-        <img data-v="4" src=".documentation/pages/layout/assets/emptystar.png" alt="4 stars" />
-        <img data-v="5" src=".documentation/pages/layout/assets/emptystar.png" alt="5 stars" />
+        <img data-v="1" src="assets/emptystar.png" alt="1 star" />
+        <img data-v="2" src="assets/emptystar.png" alt="2 stars" />
+        <img data-v="3" src="assets/emptystar.png" alt="3 stars" />
+        <img data-v="4" src="assets/emptystar.png" alt="4 stars" />
+        <img data-v="5" src="assets/emptystar.png" alt="5 stars" />
       </div>
 
       <div class="lightbox-reactions" id="lightboxReactions"></div>
@@ -1323,7 +1015,7 @@
 
   <footer>
     <a class="footer-brand" href="https://ankomstudios.com" target="_blank" rel="noopener noreferrer">
-      <img src=".documentation/pages/layout/assets/logoPixel.gif" alt="Ankom Studios" />
+      <img src="assets/logoPixel.gif" alt="Ankom Studios" />
       ankomstudios
     </a>
     <span class="footer-sep">·</span>
@@ -1335,12 +1027,10 @@
     <span class="footer-sep">·</span>
     <span>Updated 12 days ago</span>
     <span class="footer-spacer"></span>
-    <span class="footer-breadcrumb"><a href="#">Projects</a> › <a href="#">Visual Novel</a> › <a href="#">Free</a></span>
+    <span class="footer-breadcrumb"><a href="#">Games</a> › <a href="#">Visual Novel</a> › <a href="#">Free</a></span>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-  <script src="assets/system/js/profile.js"></script>
   <script>
     (function () {
       // ---- Supabase (anon/public key — safe to embed client-side, access
@@ -1359,7 +1049,7 @@
       //   create policy "public read" on public.comments for select using (true);
       //   create policy "public insert" on public.comments for insert with check (true);
       //
-      //   create table public.project_ratings (
+      //   create table public.game_ratings (
       //     id bigint generated always as identity primary key,
       //     rating numeric(3,2) not null check (rating between 0.33 and 5),
       //     created_at timestamptz not null default now()
@@ -1367,10 +1057,10 @@
       //   -- numeric, not smallint: the picker now has third-star precision
       //   -- (1/3, 2/3, 1, 1.33, ... 5), not just whole 1-5 values. If you
       //   -- already created this table with "rating smallint", run:
-      //   --   alter table public.project_ratings alter column rating type numeric(3,2);
-      //   alter table public.project_ratings enable row level security;
-      //   create policy "public read"   on public.project_ratings for select using (true);
-      //   create policy "public insert" on public.project_ratings for insert with check (true);
+      //   --   alter table public.game_ratings alter column rating type numeric(3,2);
+      //   alter table public.game_ratings enable row level security;
+      //   create policy "public read"   on public.game_ratings for select using (true);
+      //   create policy "public insert" on public.game_ratings for insert with check (true);
       const SUPABASE_URL      = "https://rdaofsjzbhbzfbxdkwvk.supabase.co";
       const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkYW9mc2p6YmhiemZieGRrd3ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NDA2NDgsImV4cCI6MjEwMzUxNjY0OH0.AIiZqArwRAHmrWxug6CqvGHQqCj3D_8DWy5dTPvFtvk";
       const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1380,10 +1070,10 @@
       // per star (full once selected/hovered-over, empty otherwise). The
       // average-rating display needs the two in-between thirds too, since
       // it renders a precise fractional value (e.g. 3.6/5) across 5 stars.
-      const STAR_EMPTY      = ".documentation/pages/layout/assets/emptystar.png";
-      const STAR_ONE_THIRD  = ".documentation/pages/layout/assets/13star.png";
-      const STAR_TWO_THIRDS = ".documentation/pages/layout/assets/23star.png";
-      const STAR_FULL       = ".documentation/pages/layout/assets/fullstar.png";
+      const STAR_EMPTY      = "assets/emptystar.png";
+      const STAR_ONE_THIRD  = "assets/13star.png";
+      const STAR_TWO_THIRDS = "assets/23star.png";
+      const STAR_FULL       = "assets/fullstar.png";
 
       function starImageForFraction(fraction) {
         const stage = Math.round(Math.max(0, Math.min(1, fraction)) * 3);
@@ -1433,14 +1123,14 @@
       // ---- Live stats panel (#sideStats) ----
       //   #statViewers    — realtime presence count (Supabase Realtime channel)
       //   #statComments   — total row count in public.comments (site-wide)
-      //   #statProjectRating — average of public.project_ratings — the PROJECT-level
-      //                     rating (the "Rate this project" button, id="rateBtn"),
+      //   #statGameRating — average of public.game_ratings — the GAME-level
+      //                     rating (the "Rate this game" button, id="rateBtn"),
       //                     kept separate from per-preview-image ratings,
       //                     which stay local per browser.
 
       const statViewers    = document.getElementById("statViewers");
       const statComments   = document.getElementById("statComments");
-      const statProjectRating = document.getElementById("statProjectRating");
+      const statGameRating = document.getElementById("statGameRating");
 
       // A stable per-browser id (localStorage, shared across tabs of the
       // same origin — unlike sessionStorage, which is per-tab) so opening
@@ -1477,49 +1167,49 @@
       refreshCommentsCount();
 
       const avgRatingStars = document.getElementById("avgRatingStars");
-      async function refreshProjectRating() {
-        const { data, error } = await sb.from("project_ratings").select("rating");
+      async function refreshGameRating() {
+        const { data, error } = await sb.from("game_ratings").select("rating");
         const count = error || !data ? 0 : data.length;
-        statProjectRating.textContent = `${count} rating${count === 1 ? "" : "s"}`;
+        statGameRating.textContent = `${count} rating${count === 1 ? "" : "s"}`;
         const avg = count ? data.reduce((sum, r) => sum + r.rating, 0) / count : 0;
         renderAvgStarRow(avgRatingStars, avg);
       }
-      refreshProjectRating();
+      refreshGameRating();
 
-      // ---- Rate this project (separate table from per-preview-image ratings) ----
+      // ---- Rate this game (separate table from per-preview-image ratings) ----
       const rateBtn        = document.getElementById("rateBtn");
-      const projectRateOverlay = document.getElementById("projectRateOverlay");
-      const projectRateStars   = document.getElementById("projectRateStars");
-      const projectRateThanks  = document.getElementById("projectRateThanks");
+      const gameRateOverlay = document.getElementById("gameRateOverlay");
+      const gameRateStars   = document.getElementById("gameRateStars");
+      const gameRateThanks  = document.getElementById("gameRateThanks");
 
-      function closeProjectRate() {
-        projectRateOverlay.classList.remove("visible");
-        setTimeout(() => { projectRateOverlay.style.display = "none"; }, 250);
+      function closeGameRate() {
+        gameRateOverlay.classList.remove("visible");
+        setTimeout(() => { gameRateOverlay.style.display = "none"; }, 250);
       }
 
-      let projectRateSelected = 0;
+      let gameRateSelected = 0;
 
-      function openProjectRate(e) {
+      function openGameRate(e) {
         if (e) e.preventDefault();
-        projectRateThanks.classList.remove("visible");
-        projectRateSelected = 0;
-        projectRateStars.querySelectorAll("img").forEach((img) => { img.src = STAR_EMPTY; });
-        projectRateOverlay.style.display = "flex";
-        requestAnimationFrame(() => projectRateOverlay.classList.add("visible"));
+        gameRateThanks.classList.remove("visible");
+        gameRateSelected = 0;
+        gameRateStars.querySelectorAll("img").forEach((img) => { img.src = STAR_EMPTY; });
+        gameRateOverlay.style.display = "flex";
+        requestAnimationFrame(() => gameRateOverlay.classList.add("visible"));
       }
 
-      rateBtn.addEventListener("click", openProjectRate);
-      document.getElementById("sideRateProjectBtn").addEventListener("click", openProjectRate);
-      projectRateOverlay.addEventListener("click", (e) => {
-        if (e.target === projectRateOverlay) closeProjectRate();
+      rateBtn.addEventListener("click", openGameRate);
+      document.getElementById("sideRateGameBtn").addEventListener("click", openGameRate);
+      gameRateOverlay.addEventListener("click", (e) => {
+        if (e.target === gameRateOverlay) closeGameRate();
       });
-      setupStarPicker(projectRateStars, () => projectRateSelected, async (v) => {
-        projectRateSelected = v;
-        const { error } = await sb.from("project_ratings").insert({ rating: v });
+      setupStarPicker(gameRateStars, () => gameRateSelected, async (v) => {
+        gameRateSelected = v;
+        const { error } = await sb.from("game_ratings").insert({ rating: v });
         if (!error) {
-          projectRateThanks.classList.add("visible");
-          refreshProjectRating();
-          setTimeout(closeProjectRate, 900);
+          gameRateThanks.classList.add("visible");
+          refreshGameRating();
+          setTimeout(closeGameRate, 900);
         }
       });
 
@@ -1538,32 +1228,32 @@
       const FEATURED_COMMENTS = [
         {
           author: "callunavulgaris",
-          avatar: ".documentation/pages/layout/assets/expfp1.jpg",
+          avatar: "assets/expfp1.jpg",
           time: "6 days ago",
           votes: "(+7/-1)",
           text: "Angelilyca is way too relatable, 10/10 rival design.",
         },
         {
           author: "cherryfeatherr",
-          avatar: ".documentation/pages/layout/assets/expfp2.jpg",
+          avatar: "assets/expfp2.jpg",
           time: "8 days ago",
           votes: "(+22/-4)",
           text: "The convention lobby background art is gorgeous, hope we get more scenes like that in the full release.",
         },
         {
           author: "moonpetal_frog",
-          avatar: ".documentation/pages/layout/assets/expfp3.jpg",
+          avatar: "assets/expfp3.jpg",
           time: "12 days ago",
           votes: "(+15/-2)",
           text: "the customization options in the demo were so much fun, spent way too long in the fit check screen honestly",
         },
         {
           author: "starr_dreamz",
-          avatar: ".documentation/pages/layout/assets/expfp4.gif",
+          avatar: "assets/expfp4.gif",
           time: "1 day ago",
           votes: "(+19/-2)",
           premium: true,
-          text: "The reflection lighting during the escalator scene is unreal, this project's presentation punches way above \"demo\" weight.",
+          text: "The reflection lighting during the escalator scene is unreal, this game's presentation punches way above \"demo\" weight.",
         },
       ];
 
@@ -1836,80 +1526,6 @@
       loadAdSlot("server-02-box", "server-02");
       loadAdSlot("server-03-box", "server-03");
       loadAdSlot("server-04-box", "server-04");
-
-      // ---- Custom video player (native controls stripped, replaced with
-      // the .vp-* bar above) — one shared initializer per .video-player. ----
-      function formatVideoTime(seconds) {
-        if (!isFinite(seconds) || seconds < 0) return "0:00";
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60).toString().padStart(2, "0");
-        return `${m}:${s}`;
-      }
-
-      function initVideoPlayer(container) {
-        const video        = container.querySelector(".vp-video");
-        const playBtn       = container.querySelector(".vp-play");
-        const muteBtn        = container.querySelector(".vp-mute");
-        const volumeSlider   = container.querySelector(".vp-volume");
-        const progress       = container.querySelector(".vp-progress");
-        const progressFill   = container.querySelector(".vp-progress-fill");
-        const curTimeEl      = container.querySelector(".vp-time-current");
-        const durTimeEl      = container.querySelector(".vp-time-duration");
-        const fsBtn          = container.querySelector(".vp-fullscreen");
-
-        function setPlayIcon(playing) {
-          playBtn.innerHTML = playing
-            ? '<i class="fa-solid fa-pause"></i>'
-            : '<i class="fa-solid fa-play"></i>';
-        }
-        function setMuteIcon() {
-          muteBtn.innerHTML = (video.muted || video.volume === 0)
-            ? '<i class="fa-solid fa-volume-xmark"></i>'
-            : '<i class="fa-solid fa-volume-high"></i>';
-        }
-
-        playBtn.addEventListener("click", () => {
-          if (video.paused) video.play(); else video.pause();
-        });
-        video.addEventListener("play",  () => setPlayIcon(true));
-        video.addEventListener("pause", () => setPlayIcon(false));
-        video.addEventListener("ended", () => setPlayIcon(false));
-
-        video.addEventListener("loadedmetadata", () => {
-          durTimeEl.textContent = formatVideoTime(video.duration);
-        });
-        video.addEventListener("timeupdate", () => {
-          curTimeEl.textContent = formatVideoTime(video.currentTime);
-          const pct = video.duration ? (video.currentTime / video.duration) * 100 : 0;
-          progressFill.style.width = `${pct}%`;
-        });
-
-        progress.addEventListener("click", (e) => {
-          if (!video.duration) return;
-          const rect = progress.getBoundingClientRect();
-          const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-          video.currentTime = pct * video.duration;
-        });
-
-        muteBtn.addEventListener("click", () => {
-          video.muted = !video.muted;
-          setMuteIcon();
-        });
-        volumeSlider.addEventListener("input", () => {
-          video.volume = parseFloat(volumeSlider.value);
-          video.muted = video.volume === 0;
-          setMuteIcon();
-        });
-
-        fsBtn.addEventListener("click", () => {
-          if (container.requestFullscreen) container.requestFullscreen();
-          else if (video.requestFullscreen) video.requestFullscreen();
-        });
-
-        video.addEventListener("click", () => playBtn.click());
-      }
-
-      document.querySelectorAll(".video-player").forEach(initVideoPlayer);
     })();
   </script>
 
