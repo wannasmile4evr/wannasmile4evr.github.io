@@ -3,1915 +3,338 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Layout test — My VTuber Rival is Actually Cute?!</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: #fdeef1;
-    color: #3a0f16;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-  a { color: inherit; }
+<link id="favicon" rel="icon" href="../../media/favicons/favicon.png"/>
+<title>WannaSmile4Evr</title>
 
-  /* ---- makeshift ad slots (skyscraper-style) ----
-     Long, narrow, sitting in the gutter beside .page's centered 1348px
-     column, one on each side. position:absolute (not fixed) so they
-     scroll with the page instead of staying pinned to the viewport —
-     they're direct children of <body> with no positioned ancestor, so
-     top/left/right resolve against the document itself. Hidden below
-     1600px since there's no gutter room to hold them without overlapping
-     real content at that point. Placeholder label shows until (if ever)
-     the fetch in the script below replaces it with real markup — the
-     label also serves as the fallback if that fetch fails silently. */
-  .ad-skyscraper {
-    position: absolute;
-    top: 635px;
-    width: 200px;
-    height: 700px;
-    background: rgba(0,0,0,0.05);
-    border: 1px dashed rgba(58,15,22,0.35);
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: 11px;
-    color: rgba(58,15,22,0.5);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    overflow: hidden;
-  }
-  .ad-skyscraper-left { left: 35px; }
-  .ad-skyscraper-right { right: 35px; }
-  /* second pair, well clear of the first set (which now bottoms out at
-     600+600=1200) — extra gap beyond that so there's clearly more
-     breathing room between the two pairs than before */
-  .ad-skyscraper-lower { top: 1505px; }
-  @media (max-width: 1600px) {
-    .ad-skyscraper { display: none; }
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.9.0/cdn/themes/dark.css" />
+<link rel="stylesheet" href="../css/main.css" />
+<link rel="stylesheet" href="../css/widgets.css" />
+<link rel="stylesheet" href="../css/shortcuts.css" />
+
+<script>
+// Preload whichever theme is actually cached as active (see themify.js's
+// ws_theme_cache), instead of always warming up redux's images regardless
+// of what the user actually last used. Falls back to redux's own images on
+// a first-ever visit, when nothing has been cached yet.
+(function () {
+  var FALLBACK = [
+    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/headerBg.png",
+    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/quoteBg.png",
+    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/mainBg.png",
+    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/footerBg.png"
+  ];
+
+  function isPreloadableImage(v) {
+    v = (v == null ? "" : String(v)).trim();
+    return /^(https?:)?\/\//i.test(v) || v.indexOf("data:") === 0;
   }
 
-  .header {
-    overflow: hidden;
-    width: 100%;
-    height: 480px;
-    margin: 0;
-    padding: 0;
-  }
-  .header img {
-    display: block;
-    width: 100%;
-    height: 480px;
-    object-fit: cover;
-    object-position: center 10%;
-  }
+  var urls = null;
+  try {
+    var activeId = (localStorage.getItem("selectedTheme") || "redux").trim().toLowerCase();
+    var cache    = JSON.parse(localStorage.getItem("ws_theme_cache") || "{}");
+    var row      = cache && typeof cache === "object" ? cache[activeId] : null;
+    if (row) urls = [row[3], row[4], row[5], row[6]].filter(isPreloadableImage);
+  } catch (_) { urls = null; }
 
-  .page {
-    position: relative;
-    max-width: 1348px;
-    margin: 0 auto;
-    padding: 44px 40px 80px;
-    display: grid;
-    grid-template-columns: 1fr 408px;
-    gap: 96px;
-  }
-  @media (max-width: 900px) {
-    .page { grid-template-columns: 1fr; padding: 32px 20px 60px; }
-    .stats-bar { flex-wrap: wrap; padding: 14px 20px; }
-    .right-col { order: -1; }
-  }
+  (urls && urls.length ? urls : FALLBACK).forEach(function (href) {
+    var link = document.createElement("link");
+    link.rel  = "preload";
+    link.as   = "image";
+    link.href = href;
+    document.head.appendChild(link);
+  });
+})();
 
-  /* YouTube wouldn't allow embedding this video, so it's self-hosted at
-     ws.ankomstudios.com instead, using the same custom .video-player/.vp-*
-     player built for the screenshot-stack previews. .video-player's own
-     width:120%/margin-left:-10% bleed trick was tuned for the right column
-     though — neutralized here so it just fills .left-col's actual width. */
-  .yt-embed { width: 100%; margin-bottom: 8px; }
-  .yt-embed .video-player { width: 100%; margin-left: 0; }
-  .yt-subscribe-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    color: #9c3a56;
-    font-weight: 700;
-    font-size: 14px;
-    text-decoration: none;
-  }
-  .yt-subscribe-link:hover { text-decoration: underline; }
-  .yt-subscribe-link i { font-size: 18px; }
+// Same idea for the active gif pack (see themify.js's ws_gifpack_cache) — the
+// loader gif is the very first thing visible on load, so warm up whichever
+// pack the user actually has active instead of always fetching redux's and
+// letting it sit there until the real one swaps in.
+(function () {
+  var FALLBACK = ["assets/media/themes/redux/gif-states/loading.gif", "assets/media/themes/redux/gif-states/loaded.gif"];
 
-  .left-col h2 {
-    font-size: 21px;
-    font-weight: 700;
-    margin: 34px 0 12px;
-  }
-  .left-col h2:first-child { margin-top: 0; }
-  .left-col h3 {
-    font-size: 16px;
-    font-weight: 700;
-    margin: 20px 0 8px;
-  }
-  .left-col h3.download-heading { font-size: 22px; }
-  .left-col h4 {
-    font-size: 14px;
-    font-weight: 700;
-    margin: 16px 0 6px;
-    opacity: 0.9;
-  }
-  .left-col p {
-    font-size: 15.5px;
-    line-height: 1.75;
-    margin: 0 0 14px;
-    max-width: 640px;
-  }
-  .left-col em { font-style: italic; }
-  .left-col ul { margin: 0 0 14px; padding-left: 22px; }
-  .left-col li { font-size: 15px; line-height: 1.7; margin-bottom: 6px; }
+  var urls = null;
+  try {
+    var activeId = (localStorage.getItem("ws_active_gifpack") || "redux").trim().toLowerCase();
+    var cache    = JSON.parse(localStorage.getItem("ws_gifpack_cache") || "{}");
+    var pack     = cache && typeof cache === "object" ? cache[activeId] : null;
+    var states   = pack && pack.states ? pack.states : null;
+    if (states) {
+      urls = ["loading", "loaded"]
+        .map(function (key) { return states[key] && states[key].src; })
+        .filter(Boolean);
+    }
+  } catch (_) { urls = null; }
 
-  /* ---- featured comments carousel — one at a time, wraps first<->last.
-     The nav buttons float ON the card (position:absolute, overlapping its
-     edges) instead of sitting inline beside it — inline buttons were
-     pushing the whole card to the right, indenting it relative to
-     everything else in .left-col. This way the card's own edges line up
-     with the rest of the column, and the buttons just overlap slightly. */
-  .featured-comments {
-    position: relative;
-    margin-top: 4px;
-  }
-  .featured-comments-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 48px;
-    border-radius: 0;
-    border: none;
-    background: #3a0f16;
-    color: #ffe3ea;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.2s;
-    z-index: 2;
-  }
-  .featured-comments-nav:hover { background: #59161f; }
-  .featured-comments-prev { left: 8px; }
-  .featured-comments-next { right: 8px; }
-  .featured-comment-card {
-    min-width: 0;
-    background: #fdf0f3;
-    padding: 16px 56px;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-  .featured-comment-card img { width: 34px; height: 34px; border-radius: 7px; flex-shrink: 0; }
-  .featured-comment-meta { font-size: 12.5px; color: rgba(58,15,22,0.7); margin-bottom: 4px; }
-  .featured-comment-meta .comment-username-link { color: #9c3a56; font-weight: 700; }
-  .featured-comment-meta .comment-votecount { color: #6b2c3a; font-weight: 700; }
-  .featured-comment-body { font-size: 14px; line-height: 1.6; color: #3a0f16; }
+  (urls && urls.length ? urls : FALLBACK).forEach(function (href) {
+    var link = document.createElement("link");
+    link.rel  = "preload";
+    link.as   = "image";
+    link.href = href;
+    document.head.appendChild(link);
+  });
+})();
+</script>
 
-  /* ---- more information toggle ---- */
-  .info-toggle-row { margin-top: 28px; }
-  .info-toggle-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: none;
-    border: none;
-    color: #3a0f16;
-    font-size: 14px;
-    cursor: pointer;
-    padding: 0;
-  }
-  .info-toggle-btn .tick { transition: transform 0.2s ease; }
-  .info-toggle-btn.open .tick { transform: rotate(180deg); }
-  .info-panel {
-    display: none;
-    margin-top: 14px;
-    background: #fdeaf0;
-    border: 1px solid #e8a9bb;
-    border-radius: 10px;
-    padding: 4px 16px;
-  }
-  .info-panel.open { display: block; }
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid #e8a9bb;
-    font-size: 13px;
-  }
-  .info-row:last-child { border-bottom: none; }
-  .info-row span:first-child { opacity: 0.65; }
-  .info-row a { color: #3a0f16; text-decoration: underline dotted; }
-  .info-row .tag-row { justify-content: flex-end; }
-
-  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
-  .tag {
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(0,0,0,0.06);
-    border: 1px solid rgba(0,0,0,0.14);
-  }
-
-  /* ---- comments (placeholder — static, itch.io-style; not wired to any
-     backend, just decorative content matching the real page's look).
-     Playful tannish-white container so it reads as its own zone against
-     the yellow page background — flat rectangle, no border/radius.
-     Height is set via JS (see syncCommentSectionHeight) to reach exactly
-     as far down as the last preview screenshot in .right-col, so both
-     columns bottom out together — .comment-list is the flexible part
-     that scrolls internally once comments overflow that height, rather
-     than growing the container taller. */
-  .comment-section {
-    background: #fdf0f3;
-    border: none;
-    border-radius: 0;
-    padding: 20px 24px;
-    margin-top: 4px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .comment-compose { margin-bottom: 8px; flex-shrink: 0; }
-  .comment-compose textarea {
-    width: 100%;
-    min-height: 90px;
-    padding: 12px 14px;
-    border-radius: 0;
-    border: 1px solid #e0a8ba;
-    background: #fff;
-    color: #3a0f16;
-    font-size: 14px;
-    font-family: inherit;
-    resize: none;
-  }
-  .comment-compose textarea::placeholder { color: #b97b8f; }
-  /* Post button only shows up while actively composing — focused, or once
-     there's text in the box — instead of sitting there permanently. */
-  .comment-post-btn {
-    display: none;
-    margin-top: 10px;
-    padding: 11px 22px;
-    border-radius: 3px;
-    border: none;
-    background: #9c3a56;
-    color: #fff;
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .comment-post-btn:hover { background: #7e3047; }
-  .comment-compose textarea:focus ~ .comment-post-btn,
-  .comment-compose textarea:not(:placeholder-shown) ~ .comment-post-btn {
-    display: block;
-  }
-  .comment-login-note {
-    display: none;
-    margin-top: 10px;
-    font-size: 13px;
-    color: #a83b52;
-  }
-  .comment-login-note.visible { display: block; }
-  .comment-login-note a { color: #a83b52; font-weight: 700; text-decoration: underline; }
-
-  /* Custom scrollbar (visible at the right edge, not just the OS default)
-     plus mobile treatment: -webkit-overflow-scrolling gives it momentum
-     scrolling, and overscroll-behavior stops the drag from "escaping"
-     into the page scroll once you hit the top/bottom — i.e. it behaves
-     like its own self-contained embedded window rather than a plain div. */
-  .comment-list {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 12px;
-    overflow-y: auto;
-    min-height: 0;
-    padding-right: 10px;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: #9c3a56 #f3dde3;
-  }
-  .comment-list::-webkit-scrollbar { width: 8px; }
-  .comment-list::-webkit-scrollbar-track { background: #f3dde3; }
-  .comment-list::-webkit-scrollbar-thumb { background: #9c3a56; }
-  .comment-list::-webkit-scrollbar-thumb:hover { background: #7e3047; }
-  .comment { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid #f3dde3; }
-  .comment:last-child { border-bottom: none; }
-  .comment img { width: 34px; height: 34px; border-radius: 7px; flex-shrink: 0; }
-  /* color (not opacity) for the muted base text, so nested elements below
-     can render genuinely darker/fully-opaque instead of being capped by
-     an ancestor's opacity compositing (a child's own opacity can only
-     make it more transparent than its parent, never less). */
-  .comment .comment-meta { font-size: 12.5px; color: rgba(58,15,22,0.7); margin-bottom: 4px; }
-  .comment .comment-meta .comment-username-link { font-weight: 700; color: #9c3a56; }
-  /* Usernames are anchors that go nowhere (href="#", click prevented in
-     JS) purely so they look/act clickable — no underline, and no text
-     selection so dragging over one shows the pointer/hand cursor instead
-     of flipping to a text-select I-beam. */
-  .comment-username-link {
-    text-decoration: none;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  /* Premium member — stylized gradient username instead of the flat
-     maroon-pink used for everyone else's name (used in both the regular
-     comment list and the featured-comments carousel). Animated: the
-     gradient sweeps across the text on a loop rather than sitting still. */
-  .comment .comment-meta .comment-username-link.premium-username,
-  .featured-comment-meta .comment-username-link.premium-username {
-    background: linear-gradient(90deg, #9c3a56, #ffe3ea, #9c3a56, #ffe3ea, #9c3a56);
-    background-size: 300% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: premiumGradientMove 5s linear infinite;
-  }
-  @keyframes premiumGradientMove {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 100% 50%; }
-  }
-  .comment .comment-meta .comment-votecount { color: #6b2c3a; font-weight: 700; }
-  .comment .comment-body { font-size: 14px; line-height: 1.6; }
-
-  .comment-votes {
-    display: flex;
-    flex-direction: column;
-    width: 22px;
-    height: 46px;
-    flex-shrink: 0;
-    border: 1px solid #e8c3ce;
-    overflow: hidden;
-  }
-  /* Each button IS exactly half the container (width:100%/height:50%), so
-     its own hover background only ever tints its own half — not a shared
-     hover on the whole box — with the icon centered within that half. */
-  .vote-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 50%;
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 10px;
-    line-height: 1;
-    color: #b97b8f;
-    opacity: 0.6;
-    cursor: default;
-    transition: background 0.15s;
-  }
-  .vote-btn:first-child { border-bottom: 1px solid #e8c3ce; }
-  .vote-btn:hover { background: rgba(156,58,86,0.15); }
-
-  /* ---- right column ---- */
-  .right-col { display: flex; flex-direction: column; gap: 16px; }
-
-  /* ---- floating action buttons (top-right, fixed) ---- */
-  .floating-actions {
-    position: fixed;
-    top: 24px;
-    right: 40px;
-    z-index: 500;
-  }
-
-  .action-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-  }
-
-  /* hamburger sits inline, right beside button 1 — hidden/collapsed to
-     zero width by default so it doesn't take up space or shift button 1 */
-  .first-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  /* profile picture — sits before the hamburger, always visible. This is
-     the real #pfp element from assets/system/pages/main.html (profile.js
-     wires its click to open #profileOverlay below and sets its src from
-     localStorage), just resized to fit this slot instead of main.html's
-     header treatment. */
-  .profile-slot {
-    display: block;
-    width: 42px;
-    height: 42px;
-    border-radius: 7px;
-    object-fit: cover;
-    background: #3a0f16;
-    border: none;
-    flex-shrink: 0;
-    cursor: pointer;
-  }
-
-  /* ---- profile overlay (ported from assets/system/pages/main.html, same
-     ids/behavior — ../js/profile.js there becomes assets/system/js/
-     profile.js here since this file sits at the repo root instead of
-     assets/system/pages/) ---- */
-  #profileOverlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.65);
-    z-index: 9999;
-    justify-content: center;
-    align-items: center;
-  }
-  #profileOverlay.visible { display: flex; }
-  #profileOverlayPanel {
-    background:
-      linear-gradient(rgba(34,34,34,0.1), rgba(34,34,34,0.1)),
-      url('https://raw.githubusercontent.com/wannasmile4evr/wannasmile4evr.github.io/main/asssets/media/themes/redux/system-media/headerBg.png'),
-      #222;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius: 16px;
-    padding: 28px 24px 24px;
-    width: 380px;
-    max-width: 95vw;
-    max-height: 90vh;
-    overflow-y: auto;
-    text-align: center;
-    box-shadow: 0 6px 32px rgba(0,0,0,.7);
-    font-family: monospace;
-    color: #fff;
-    position: relative;
-  }
-  #profileOverlayClose {
-    position: absolute;
-    top: 12px; right: 14px;
-    background: none; border: none;
-    color: #aaa; font-size: 18px;
-    cursor: pointer;
-    line-height: 1;
-  }
-  #profileOverlayClose:hover { color: #fff; }
-  #profileOverlayPanel h2 { margin: 0 0 14px; font-size: 18px; }
-  .profile-preview {
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #444;
-    margin-bottom: 10px;
-    display: block;
-    margin-left: auto; margin-right: auto;
-  }
-  .profile-overlay-username { font-size: 15px; margin-bottom: 16px; opacity: .8; }
-  #profileOverlayPanel label { display: block; text-align: left; font-size: 13px; margin-bottom: 4px; opacity: .75; }
-  #profileOverlayPanel input[type="file"] { margin: 6px 0 10px; color: #ccc; font-size: 13px; }
-  #profileOverlayPanel input[type="text"] {
-    width: 85%;
-    padding: 8px 10px;
-    border-radius: 6px;
-    border: none;
-    margin-bottom: 14px;
-    font-size: 15px;
-    background: #333;
-    color: #fff;
-  }
-  .overlay-btn {
-    display: inline-block;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin: 4px;
-    transition: transform .15s, background .15s;
-    background: #444;
-  }
-  .overlay-btn:hover { transform: scale(1.04); background: #555; }
-  .remove-btn { background: #555; }
-  .save-btn { background: #c0392b; }
-  .save-btn:hover { background: #e74c3c; }
-  .hamburger-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 0;
-    height: 42px;
-    border-radius: 7px;
-    background: #3a0f16;
-    color: #ffe3ea;
-    border: none;
-    cursor: pointer;
-    flex-shrink: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: scale(0.85);
-    padding: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease, transform 0.25s ease, width 0.25s ease, background 0.2s ease;
-  }
-  .hamburger-btn:hover { background: #59161f; }
-
-  .floating-actions.collapsed .hamburger-btn {
-    opacity: 1;
-    transform: scale(1);
-    width: 42px;
-    pointer-events: auto;
-  }
-
-  /* "View all by Studio Élan" only shows in the expanded row; collapsing
-     hides it there, but it reappears as the first item in the hamburger's
-     dropdown (.viewall-in-dropdown) — moved under the dashboard icon
-     rather than disappearing outright. */
-  .floating-actions.collapsed .first-row-pill {
-    display: none;
-  }
-  .viewall-in-dropdown { display: none; }
-  .floating-actions.collapsed .viewall-in-dropdown { display: flex; }
-
-  /* collapsed: hide buttons 2-4, keep button 1 (+ hamburger) visible */
-  .rest-buttons {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    transform-origin: top right;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-  }
-  .floating-actions.collapsed .rest-buttons {
-    opacity: 0;
-    transform: scale(0.92) translateY(-8px);
-    pointer-events: none;
-    position: absolute;
-    top: 0;
-    right: 0;
-  }
-
-  /* collapsed + opened via click: bring the rest back as a dropdown under
-     the first row — one shared container (background + shadow live on the
-     wrapper, not each item), with items as full-width rows separated by
-     thin dividers instead of separate floating pills. Each row keeps its
-     own hover/click behavior and icon+text layout, just without its own
-     background/shadow, since the wrapper now owns that. */
-  .floating-actions.collapsed.dropdown-open .rest-buttons {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    pointer-events: auto;
-    position: absolute;
-    top: 50px;
-    right: 0;
-    gap: 0;
-    min-width: 220px;
-    background: #3a0f16;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-  }
-  .floating-actions.collapsed.dropdown-open .rest-buttons .action-pill {
-    width: 100%;
-    min-width: 0;
-    padding: 14px 18px;
-    border-radius: 0;
-    box-shadow: none;
-    border-bottom: 1px solid rgba(255,227,234,0.15);
-  }
-  .floating-actions.collapsed.dropdown-open .rest-buttons .action-pill:last-child {
-    border-bottom: none;
-  }
-
-  /* ---- live stats bar ----
-     A real full-width header row (100% of the viewport, not a floating
-     sidebar box) sitting between .header (hero image) and .page (main
-     content), in normal document flow. Stat info sits left, "Rate project"
-     sits right. No border-radius, square edges. */
-  .stats-bar {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    background: #9c3a56;
-    color: #fff;
-    padding: 14px 40px;
-    font-size: 13px;
-  }
-  .stats-bar-info {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    flex-wrap: wrap;
-  }
-  .stats-bar-mini {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    font-weight: 700;
-  }
-  .stats-bar-mini i { opacity: 0.85; font-size: 13px; }
-  .stats-bar-avg-stars { display: inline-flex; gap: 3px; }
-  .stats-bar-avg-stars img { width: 28px; height: 28px; display: block; }
-  .stats-bar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .stats-bar-rate-btn {
-    flex-shrink: 0;
-    border: none;
-    background: #fff;
-    color: #9c3a56;
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-  }
-  .stats-bar-rate-btn:hover { background: #ffe3ea; color: #3a0f16; }
-  .stats-bar-download-btn {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    border: 1px solid #fff;
-    background: transparent;
-    color: #fff;
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-  }
-  .stats-bar-download-btn:hover { background: #fff; color: #9c3a56; }
-
-  .action-pill {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 18px 10px;
-    border-radius: 7px;
-    background: #3a0f16;
-    border: none;
-    color: #ffe3ea;
-    text-decoration: none;
-    font-size: 13px;
-    cursor: pointer;
-    width: auto;
-    text-align: right;
-    transition: background 0.2s;
-  }
-  .action-pill:hover { background: #59161f; }
-  .action-pill svg { flex-shrink: 0; }
-
-  .screenshot-stack { display: flex; flex-direction: column; gap: 10px; }
-
-  .sidebar-extra {
-    background: #fdf0f3;
-    padding: 16px 20px;
-  }
-  .sidebar-extra h4 {
-    margin: 0 0 8px;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.75;
-  }
-  .sidebar-extra p { margin: 0; font-size: 13.5px; line-height: 1.65; }
-  .screenshot-stack img {
-    width: 120%;
-    margin-left: -10%;
-    max-width: none;
-    border-radius: 0;
-    border: none;
-    display: block;
-    cursor: pointer;
-  }
-  /* Video previews, hosted at ws.ankomstudios.com — same full-bleed sizing
-     as the screenshot images, just with native controls instead of the
-     click-to-enlarge lightbox (querySelectorAll("img") in the script below
-     only ever targets <img>, so these sit outside that carousel/rating
-     system entirely — they play in place). */
-  /* ---- custom video player (previews hosted at ws.ankomstudios.com) ----
-     Native controls are stripped off the <video> itself; this bar is a
-     from-scratch play/seek/volume/fullscreen UI in the site's palette
-     instead. Same full-bleed sizing the screenshots use, just moved to
-     the wrapper since the video no longer owns it alone. */
-  .video-player {
-    position: relative;
-    width: 120%;
-    margin-left: -10%;
-  }
-  .vp-video { width: 100%; display: block; background: #000; }
-  .vp-controls {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: linear-gradient(0deg, rgba(0,0,0,0.75), rgba(0,0,0,0));
-    color: #fff;
-  }
-  .vp-btn {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: none;
-    background: none;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    opacity: 0.9;
-    transition: opacity 0.15s;
-  }
-  .vp-btn:hover { opacity: 1; }
-  .vp-time { font-size: 11px; font-variant-numeric: tabular-nums; opacity: 0.85; flex-shrink: 0; }
-  .vp-progress {
-    flex: 1;
-    height: 5px;
-    background: rgba(255,255,255,0.25);
-    cursor: pointer;
-  }
-  .vp-progress-fill {
-    height: 100%;
-    width: 0%;
-    background: #9c3a56;
-  }
-  .vp-volume {
-    width: 60px;
-    accent-color: #9c3a56;
-    flex-shrink: 0;
-  }
-
-  /* ---- rate-this-project modal (shares the lightbox's overlay look) ---- */
-  .rate-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(26,8,12,0.55);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-  }
-  .rate-overlay.visible { opacity: 1; }
-  .rate-modal {
-    width: min(320px, calc(100% - 40px));
-    background: #3a0f16;
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center;
-    color: #ffe3ea;
-    transform: scale(0.95) translateY(8px);
-    transition: transform 0.25s ease;
-  }
-  .rate-overlay.visible .rate-modal { transform: scale(1) translateY(0); }
-  .rate-modal h3 { margin: 0 0 6px; font-size: 16px; }
-  .rate-modal p { margin: 0 0 16px; font-size: 12.5px; opacity: 0.8; }
-  .rate-stars { display: inline-flex; gap: 6px; cursor: pointer; }
-  .rate-stars img { width: 30px; height: 30px; display: block; }
-  .rate-thanks { margin-top: 14px; font-size: 12.5px; color: #b7ffb7; display: none; }
-  .rate-thanks.visible { display: block; }
-
-  /* ---- lightbox ---- */
-  .lightbox-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(26,8,12,0.55);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-  }
-  .lightbox-overlay.visible { opacity: 1; }
-
-  .lightbox-close {
-    position: fixed;
-    top: 24px;
-    right: 40px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.35);
-    color: #fff;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .lightbox-close:hover { background: rgba(0,0,0,0.55); }
-
-  .lightbox-nav {
-    position: fixed;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.35);
-    color: #fff;
-    border: none;
-    font-size: 26px;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-  }
-  .lightbox-nav:hover { background: rgba(0,0,0,0.55); }
-  .lightbox-nav-prev { left: 24px; }
-  .lightbox-nav-next { right: 24px; }
-
-  .lightbox-content {
-    width: 60vw;
-    min-width: 60vw;
-    max-width: 90vw;
-    height: auto;
-    max-height: 90vh;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 4px;
-    transform: scale(0.95) translateY(8px);
-    opacity: 0;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-  }
-  .lightbox-overlay.visible .lightbox-content {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-  }
-
-  .lightbox-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-    color: #fff;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-  }
-
-  .lightbox-img {
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-    border: none;
-    display: block;
-  }
-
-  .lightbox-stats {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 16px;
-    font-size: 13px;
-    color: rgba(255,255,255,0.85);
-  }
-
-  .lightbox-stars { display: inline-flex; gap: 6px; cursor: pointer; }
-  .lightbox-stars img { width: 28px; height: 28px; display: block; }
-
-  .lightbox-reactions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-  }
-  .reaction-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.18);
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
-  }
-  .reaction-pill:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
-  .reaction-pill.active {
-    background: rgba(156,58,86,0.25);
-    border-color: #9c3a56;
-  }
-  .reaction-pill .reaction-count { font-size: 12px; opacity: 0.85; }
-
-  footer {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 14px 40px;
-    font-size: 12px;
-    opacity: 0.75;
-  }
-  footer a { text-decoration: underline; }
-  footer .footer-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    text-decoration: none;
-    font-weight: 700;
-  }
-  footer .footer-brand img { width: 16px; height: 16px; }
-  footer .footer-sep { opacity: 0.5; }
-  footer .footer-spacer { flex: 1; }
-  footer .footer-breadcrumb a { text-decoration: underline; }
-</style>
+<link rel="preload" as="image" href="https://i.redd.it/kjektcn4myv91.png" /> <!--Graduation background image-->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" rel="stylesheet">
 </head>
-<body>
 
-  <div id="server-01-box" class="ad-skyscraper ad-skyscraper-left">Advertisement</div>
-  <div id="server-02-box" class="ad-skyscraper ad-skyscraper-right">Advertisement</div>
-  <div id="server-03-box" class="ad-skyscraper ad-skyscraper-left ad-skyscraper-lower">Advertisement</div>
-  <div id="server-04-box" class="ad-skyscraper ad-skyscraper-right ad-skyscraper-lower">Advertisement</div>
+<body class="ws-loading">
 
-  <div class="floating-actions" id="floatingActions">
-    <div class="action-stack" id="actionStack">
-      <div class="first-row">
-        <img class="profile-slot" id="pfp" alt="Profile" title="Edit profile" src="" />
-        <div id="profileOverlay">
-          <div id="profileOverlayPanel">
-            <button id="profileOverlayClose" title="Close">✕</button>
-            <h2>Edit Profile</h2>
+<div id="incognitoIndicator">blob:null mode</div>
+<div id="topBar">
+  <header>
+    <nav class="nav-links">
+      <a href="main.html" target="_blank">Home</a>
+      <a href="#" title="Coming soon">Favorites</a>
+      <a href="#" title="Coming soon">Discovery</a>
+      <a href="#" title="Coming soon">Settings</a>
+      <a href="https://padlet.com/thawdabase/ankomstudios" target="_blank">Suggestions</a>
+      <a href="#" title="Coming soon">About</a>
+      <div class="pages-anchor">
+        <button class="arrowleft" onclick="prevPage()">
+          <img src="../../media/images/header-arrows/left-arrow.png" />
+        </button>
+        <span class="page-indicator">...</span>
+        <button class="arrowright" onclick="nextPage()">
+          <img src="../../media/images/header-arrows/right-arrow.png" />
+        </button>
+        <a href="store.html" target="_blank">Widgets</a>
+        <a href="#" title="Coming soon">NEWS</a>
 
-            <img id="profilePreview" class="profile-preview" src="" alt="Profile Preview">
-            <div class="profile-overlay-username" id="profileOverlayUsername">Nickname</div>
+        <button class="mute-btn">
+          <img src="../../media/images/audio-toggle-btn/mute.png" id="muteToggleImg" />
+        </button>
 
-            <label for="profilePicInput">Change Picture:</label><br>
-            <input type="file" id="profilePicInput" accept="image/*"><br>
+        <button class="Qtype">
+          <img src="../../media/images/qtypes-btn/Qleft.png" id="QtypeToggle" />
+        </button>
 
-            <button type="button" id="removePicBtn" class="overlay-btn remove-btn">Remove Picture</button>
+        <button id="nes-btn">
+          <img src="../../media/images/panic-btn/deny.png" alt="Toggle">
+        </button>
 
-            <div id="cropContainer" style="display:none; margin-top:10px;">
-              <img id="cropPreview" style="max-width:100%; border-radius:8px;">
-              <div style="margin-top:8px;">
-                <button type="button" id="cropConfirm" class="overlay-btn">✅ Crop</button>
-                <button type="button" id="cropCancel" class="overlay-btn">❌ Cancel</button>
-              </div>
-            </div>
+<button id="cloak-btn">
+  <img src="../../media/images/cloak-btn/cloaked.png" alt="CloakToggle">
+</button>
 
-            <br>
-            <label for="usernameInput">Username:</label><br>
-            <input type="text" id="usernameInput" placeholder="Enter nickname"><br>
-
-            <button type="button" id="profileSaveBtn" class="overlay-btn save-btn">Save Changes</button>
-          </div>
+      </div>
+    </nav>
+    <div class="header-controls">
+      <div class="search-box">
+        <input id="searchInputHeader" type="text" placeholder="Search..." />
+        <button id="searchBtnHeader" aria-haspopup="true" aria-expanded="false">
+          <img src="https://raw.githubusercontent.com/5lackerish/5lackerish.github.io/main/system/images/icons/search.png" />
+        </button>
+        <div id="searchCategoryMenu" class="search-category-menu" aria-hidden="true">
+          <p class="search-category-heading">Categories</p>
+          <div id="searchCategoryList" class="search-category-list"></div>
+          <p class="search-category-heading">Sub-categories</p>
+          <div id="searchSubcategoryList" class="search-category-list"></div>
         </div>
-        <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Menu">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-        <a class="action-pill first-row-pill" href="https://vnstudioelan.itch.io" target="_blank" rel="noopener noreferrer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-          View all by Studio Élan
-        </a>
       </div>
-      <div class="rest-buttons" id="restButtons">
-        <a class="action-pill viewall-in-dropdown" href="https://vnstudioelan.itch.io" target="_blank" rel="noopener noreferrer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-          View all by Studio Élan
-        </a>
-        <a class="action-pill" href="https://vnstudioelan.itch.io" target="_blank" rel="noopener noreferrer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-          Follow Studio Élan
-        </a>
-        <button class="action-pill" type="button" id="rateBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          Rate this project
-        </button>
-        <a class="action-pill" href="https://itch.io/games-like/4967352" target="_blank" rel="noopener noreferrer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-          Related projects
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <div class="header">
-    <img src=".documentation/pages/layout/assets/wannasmile-header.png" alt="WannaSmile4Evr" />
-  </div>
-
-  <div class="stats-bar" id="statsBar">
-    <div class="stats-bar-info">
-      <span class="stats-bar-mini"><i class="fa-solid fa-eye"></i> <span id="statViewers">—</span></span>
-      <span class="stats-bar-mini"><i class="fa-solid fa-eye-slash"></i> <span id="statGlobalViews">4,821</span></span>
-      <span class="stats-bar-mini"><i class="fa-solid fa-comment"></i> <span id="statComments">—</span></span>
-      <span class="stats-bar-mini"><span class="stats-bar-avg-stars" id="avgRatingStars"></span> <span id="statProjectRating">—</span></span>
-    </div>
-    <div class="stats-bar-actions">
-      <button type="button" class="stats-bar-rate-btn" id="sideRateProjectBtn">Rate project</button>
-      <button type="button" class="stats-bar-download-btn" id="statsBarDownloadBtn">
-        <i class="fa-solid fa-download"></i> Download
+      <img id="pfp" src="https://raw.githubusercontent.com/mcmattyobriore/yogurtyooo.github.io/main/system/images/profile/smile.png" />
+      <button id="dashboardBtn">
+        <i class="fa-solid fa-bars"></i>
       </button>
     </div>
+  </header>
+  <div id="quoteWrapper">
+    <p id="quoteBox"></p>
   </div>
+</div>
 
-  <div class="page">
-    <div class="left-col">
-      <div class="yt-embed">
-        <div class="video-player">
-          <video class="vp-video" src="https://ws.ankomstudios.com/previews/videos/WannaSmile4Evr.mp4" preload="metadata" playsinline></video>
-          <div class="vp-controls">
-            <button type="button" class="vp-btn vp-play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
-            <span class="vp-time vp-time-current">0:00</span>
-            <div class="vp-progress"><div class="vp-progress-fill"></div></div>
-            <span class="vp-time vp-time-duration">0:00</span>
-            <button type="button" class="vp-btn vp-mute" aria-label="Mute"><i class="fa-solid fa-volume-high"></i></button>
-            <input type="range" class="vp-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume" />
-            <button type="button" class="vp-btn vp-fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand"></i></button>
-          </div>
-        </div>
+<aside id="dashboardMenu" class="dashboard-menu">
+  <p id="dashNickname" style="opacity:0.6;font-size:0.85em;">Nickname</p>
+  <a href="#" id="openShortCuts">Shortcuts</a>
+  <a href="#" title="Coming soon">credits &amp; contributors</a>
+  <a href="#" id="clearData">Clear My Data</a>
+  <a href="https://ankomstudios.com/pages/wannasmile/" title="AnkomStudios.com">DOWNLOAD 4EVR</a>
+</aside>
+
+<div id="containerLoader">
+  <img src="../../media/themes/redux/gif-states/loading.gif" alt="loading..." />
+</div>
+
+<main>
+  <div id="container"></div>
+</main>
+
+<button id="toTopBtn">⬆ Top</button>
+
+<button id="wsWidgetBubble" aria-label="Open widget">
+  <img id="wsWidgetIcon" src="" alt="" />
+</button>
+<div id="wsWidgetPanel">
+  <div id="wsWidgetBtns">
+    <button class="ss-panel-btn" id="wsWidgetFsBtn"    title="Fullscreen">⛶</button>
+    <button class="ss-panel-btn" id="wsWidgetMinBtn"   title="Minimize">−</button>
+    <button class="ss-panel-btn" id="wsWidgetCloseBtn" title="Close">✕</button>
+  </div>
+  <div id="wsWidgetFrameWrap"></div>
+  <div id="wsWidgetResizeHandle"></div>
+</div>
+
+<footer class="footer">
+  <div class="footer-links">
+    <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io" target="_blank" rel="noopener noreferrer">source</a>
+    <a href="dmca.html">DMCA</a>
+    <a href="#" title="Coming soon">Discord</a>
+<a href="#" id="importData">Import Data</a>
+<a href="#" id="exportData">Export Data</a>
+<a href="#" id="transData">Transfer Data</a>
+    <a href="#" id="footerVersion">WannaSmile4Evr</a>
+  </div>
+</footer>
+
+<div id="profileOverlay">
+  <div id="profileOverlayPanel">
+    <button id="profileOverlayClose" title="Close">✕</button>
+    <h2>Edit Profile</h2>
+
+    <img id="profilePreview" class="profile-preview" src="" alt="Profile Preview">
+    <div class="profile-overlay-username" id="profileOverlayUsername">Nickname</div>
+
+    <label for="profilePicInput">Change Picture:</label><br>
+    <input type="file" id="profilePicInput" accept="image/*"><br>
+
+    <button type="button" id="removePicBtn" class="overlay-btn remove-btn">Remove Picture</button>
+
+    <div id="cropContainer" style="display:none; margin-top:10px;">
+      <img id="cropPreview" style="max-width:100%; border-radius:8px;">
+      <div style="margin-top:8px;">
+        <button type="button" id="cropConfirm" class="overlay-btn">✅ Crop</button>
+        <button type="button" id="cropCancel"  class="overlay-btn">❌ Cancel</button>
       </div>
-      <a class="yt-subscribe-link" href="https://youtu.be/CKHagS16WW0?si=FRPyR6D0DkVuJHSt" target="_blank" rel="noopener noreferrer">
-        <i class="fa-brands fa-youtube"></i> Watch on YouTube &amp; subscribe!
-      </a>
-      <h2>They said it wouldn't come...WannaSmile, now operated by Ankom Studios, presents Version: Forever.</h2>
-      <p>
-        <em>Ankom Studios 2026, comprised of the Yeezy Night Funkin Team.</em>
-      </p>
-      <p>
-        With an ambitious 20 page plan, we bring to you an overhaul of content within the library. More than just projects, Version Forever includes the following:
-      </p>
-
-      <h3>Pages</h3>
-
-      <h4>Home</h4>
-      <ul>
-        <li>Previously "index" now moved, and named after its header name.</li>
-        <li>20 planned pages of assets (75 assets per-page)</li>
-        <li>Updated &amp; bug fix implementations: Friday Night Funkin', FNAF series, Smash Karts, 1v1.LOL, etc.</li>
-        <li>Search now includes the unimplemented "Categories" &amp; "sub categories" filtering, along with search specific quotes, was it needed? Yes sorta, so shut up..</li>
-        <li>Removed favorites, wait WHAT?? Chill.. Favorites has been moved into Home, as an icon toggle alike audio, qType, panic, and cloak :)</li>
-      </ul>
-
-      <h4>Favorites</h4>
-      <ul>
-        <li>Previously in its own page, now merged into Home.</li>
-        <li>Same functionality, might I say even better, no need to open a separate tab to view your saved assets! They appear as is here, and they are still sorted by their own paging because why not?</li>
-      </ul>
-
-      <h4>Discovery</h4>
-      <ul>
-        <li>Previously broke, chud, low tier jayden, now awesome, works, and has alphabetic sortings, and the categories/sub categories specific to it now are in Home :(/)</li>
-        <li>Before the asset previews were stylized to be cut off, now they display in their full form, why? Because the library is being expanded by twice the amount!!</li>
-      </ul>
-
-      <h4>Suggestions</h4>
-      <ul>
-        <li>Suggestions page, new Padlet URL! and hazard/report feature has had a new change, they now no longer are tied specifically offplatform, especially good if Padlet is not your thing.</li>
-        <li>Suggestions work as ever, tell me what you want, and it may be added :)</li>
-      </ul>
-
-      <h4>NEWS</h4>
-      <ul>
-        <li>News previously didn't exist, let me introduce you to greatness..</li>
-        <li>All news about Ankom Studios, Yeezy Night Funkin, and of course-- WannaSmile is now available offplatform to our domain at <a href="https://ankomstudios.com" target="_blank" rel="noopener noreferrer">https://ankomstudios.com</a>!</li>
-        <li>I won't give you any spoilers but check it out if you're genuinely interested :p</li>
-      </ul>
-
-      <h4>STORE</h4>
-      <ul>
-        <li>A store? Who ever asked for that.. but of course, it's not paid.</li>
-        <li>WannaSmile was and will remain free, this new store is just a better way to distribute modificational changes towards the site, personification is key!</li>
-        <li>Widgets, backgrounds &amp; themes, and individual gif packs are currently available.</li>
-        <li>Previously; gif packs were tied to themes, now they can be further customized, choose any theme and not worry if 1 gif pack is cuter, awesomer, or cooler, choose!</li>
-        <li>Widgets are massively updated from last time, previously we only had SoundScape, which is a very great widget which provides comfortable sound &amp; sequence.</li>
-        <li>New widgets consist of a digital pet, randomizer wheel, coinflip &amp; Owourency, why? idk well you figure that out xd</li>
-      </ul>
-
-      <h4>credits</h4>
-      <ul>
-        <li>Page dedicated to libraries used, sources &amp; contributors.</li>
-        <li>Like GitHub, we will now display a contrib grid at the credits page!</li>
-      </ul>
-
-      <h4>DMCA</h4>
-      <ul>
-        <li>Dedicated place to reach out and file a takedown request for any asset of which you can provide documentation of affiliation.</li>
-        <li>Nothing much here really.</li>
-      </ul>
-
-      <h3>Backend and features!</h3>
-      <p><b>The nerdy part, read if ur interested.</b></p>
-      <ul>
-        <li>WannaSmile now has Supabase enabled for live user tracking, and Cloudflare for database/bucket asset storage. Still continuing to use GS as it's lightweight, free and generally better than base .json, the new stuff is the expanded GBA &amp; emulator library, and the user backend &amp; comment section functionality. Notice how this page looks like itch.io?</li>
-        <li>Developed a new way to distribute emulated assets, introducing "Simulate.Ws"</li>
-        <li>In development: aside webpage loading through request and receiving responses of https webpage data.</li>
-      </ul>
-
-      <h3>NOTE</h3>
-      <p>
-        WannaSmile now operates under ticketed usage, ticket approval is permanent, once a ticket is created, you now own that ticket, the status of your ticket may change due to your activity in comments, and behavior, the 1st 50 tickets will be auto-approved, those after will have to check if they've been approved, a ticket is required for practically everything inside of WannaSmile but is to avoid bot traffic &amp; you won't even have to ever use it after its creation and approval thereof.
-      </p>
-
-      <h3 class="download-heading">Download</h3>
-<iframe src="https://itch.io/embed/5025954" frameborder="0" width="552" height="167"><a href="https://ankomstudios.itch.io/wannasmile">WannaSmile by ankomstudios</a></iframe>
-
-      <h3>Featured comments</h3>
-      <div class="featured-comments" id="featuredComments">
-        <button type="button" class="featured-comments-nav featured-comments-prev" id="featuredPrev" aria-label="Previous featured comment">‹</button>
-        <div class="featured-comment-card" id="featuredCommentCard"></div>
-        <button type="button" class="featured-comments-nav featured-comments-next" id="featuredNext" aria-label="Next featured comment">›</button>
-      </div>
-
-      <div class="info-toggle-row">
-        <button class="info-toggle-btn" id="infoToggleBtn" type="button">
-          More information
-          <svg class="tick" width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <div class="info-panel" id="infoPanel">
-          <div class="info-row"><span>Updated</span><span>Sept 19th 2026</span></div>
-          <div class="info-row"><span>Published</span><span>Sept 21st 2026</span></div>
-          <div class="info-row"><span>Status</span><span>Up to date.</span></div>
-          <div class="info-row"><span>Platforms</span><span>Windows, chrome</span></div>
-          <div class="info-row"><span>Rating</span><span>0 (0 ratings, rate this project for a surprise :v)</span></div>
-          <div class="info-row"><span>Author</span><span>McMatty Obriore</span></div>
-          <div class="info-row"><span>Genre</span><span>Informational</span></div>
-          <div class="info-row">
-            <span>Tags</span>
-            <div class="tag-row">
-              <span class="tag">library</span>
-              <span class="tag">open source</span>
-              <span class="tag">Ankom Studios</span>
-              <span class="tag">WannaSmile4Evr</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <h2>Comments</h2>
-      <div class="comment-section">
-        <div class="comment-compose">
-          <textarea id="commentComposeInput" placeholder="Write your comment…"></textarea>
-          <button type="button" class="comment-post-btn" id="commentPostBtn">Post comment</button>
-          <div class="comment-login-note" id="commentLoginNote">
-            <a href="https://itch.io/login" target="_blank" rel="noopener noreferrer">Log in with itch.io</a> to leave a comment.
-          </div>
-        </div>
-        <div class="comment-list">
-          <div class="comment">
-            <div class="comment-votes">
-              <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
-              <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
-            </div>
-            <img src="https://static.itch.io/images/frog-blue.png" alt="" />
-            <div>
-              <div class="comment-meta"><a href="#" class="comment-username-link">lily_lover</a> · 3 days ago <span class="comment-votecount">(+10/-32)</span></div>
-              <div class="comment-body">This demo made me so much more excited for the full release, the writing is so charming!</div>
-            </div>
-          </div>
-          <div class="comment">
-            <div class="comment-votes">
-              <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
-              <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
-            </div>
-            <img src=".documentation/pages/layout/assets/expfp1.jpg" alt="" />
-            <div>
-              <div class="comment-meta"><a href="#" class="comment-username-link">callunavulgaris</a> · 6 days ago <span class="comment-votecount">(+7/-1)</span></div>
-              <div class="comment-body">Angelilyca is way too relatable, 10/10 rival design.</div>
-            </div>
-          </div>
-          <div class="comment">
-            <div class="comment-votes">
-              <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
-              <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
-            </div>
-            <img src=".documentation/pages/layout/assets/expfp2.jpg" alt="" />
-            <div>
-              <div class="comment-meta"><a href="#" class="comment-username-link">cherryfeatherr</a> · 8 days ago <span class="comment-votecount">(+22/-4)</span></div>
-              <div class="comment-body">The convention lobby background art is gorgeous, hope we get more scenes like that in the full release.</div>
-            </div>
-          </div>
-          <div class="comment">
-            <div class="comment-votes">
-              <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
-              <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
-            </div>
-            <img src="https://static.itch.io/images/frog-red.png" alt="" />
-            <div>
-              <div class="comment-meta"><a href="#" class="comment-username-link">birdup67</a> · 10 days ago <span class="comment-votecount">(+3/-0)</span></div>
-              <div class="comment-body">is it going to be playable on android?</div>
-            </div>
-          </div>
-          <div class="comment">
-            <div class="comment-votes">
-              <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
-              <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
-            </div>
-            <img src=".documentation/pages/layout/assets/expfp3.jpg" alt="" />
-            <div>
-              <div class="comment-meta"><a href="#" class="comment-username-link">moonpetal_frog</a> · 12 days ago <span class="comment-votecount">(+15/-2)</span></div>
-              <div class="comment-body">the customization options in the demo were so much fun, spent way too long in the fit check screen honestly</div>
-            </div>
-          </div>
-          <div class="comment">
-            <div class="comment-votes">
-              <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
-              <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
-            </div>
-            <img src=".documentation/pages/layout/assets/expfp4.gif" alt="" />
-            <div>
-              <div class="comment-meta"><a href="#" class="comment-username-link premium-username">starr_dreamz</a> · 1 day ago <span class="comment-votecount">(+19/-2)</span></div>
-              <div class="comment-body">The reflection lighting during the escalator scene is unreal, this project's presentation punches way above "demo" weight.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
 
-    <div class="right-col">
-      <div class="screenshot-stack" id="screenshotStack">
-        <div class="video-player">
-          <video class="vp-video" src="https://ws.ankomstudios.com/previews/videos/gta-advance-pt1.mp4" preload="metadata" playsinline></video>
-          <div class="vp-controls">
-            <button type="button" class="vp-btn vp-play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
-            <span class="vp-time vp-time-current">0:00</span>
-            <div class="vp-progress"><div class="vp-progress-fill"></div></div>
-            <span class="vp-time vp-time-duration">0:00</span>
-            <button type="button" class="vp-btn vp-mute" aria-label="Mute"><i class="fa-solid fa-volume-high"></i></button>
-            <input type="range" class="vp-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume" />
-            <button type="button" class="vp-btn vp-fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand"></i></button>
-          </div>
-        </div>
-        <div class="video-player">
-          <video class="vp-video" src="https://ws.ankomstudios.com/previews/videos/gta-advance-pt2.mp4" preload="metadata" playsinline></video>
-          <div class="vp-controls">
-            <button type="button" class="vp-btn vp-play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
-            <span class="vp-time vp-time-current">0:00</span>
-            <div class="vp-progress"><div class="vp-progress-fill"></div></div>
-            <span class="vp-time vp-time-duration">0:00</span>
-            <button type="button" class="vp-btn vp-mute" aria-label="Mute"><i class="fa-solid fa-volume-high"></i></button>
-            <input type="range" class="vp-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume" />
-            <button type="button" class="vp-btn vp-fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand"></i></button>
-          </div>
-        </div>
-        <img src=".documentation/pages/layout/assets/4everPreview.png" alt="WannaSmile4Evr library" data-title="WannaSmile4Evr library" />
-        <img src=".documentation/pages/layout/assets/graduationPreview.png" alt="Graduation theme" data-title="Graduation theme" />
-        <img src=".documentation/pages/layout/assets/profileModalPreview.png" alt="Edit Profile modal" data-title="Edit Profile modal" />
-        <img src=".documentation/pages/layout/assets/soundscapePreview.png" alt="Soundscape widget" data-title="Soundscape widget" />
-      </div>
+    <br>
+    <label for="usernameInput">Username:</label><br>
+    <input type="text" id="usernameInput" placeholder="Enter nickname"><br>
 
-      <div class="sidebar-extra">
-        <h4>Extra</h4>
-        <p>
-          I've introduced ads to the index page, cool right? Well sorta, anyways DM ME! If you want an ad posted up, an ad box is $1.00 USD, and lasts for a week, and to get your very own widget added to the site, that's free :) To support WannaSmile &amp; Ankom Studios, you should go ahead and go to the socials page! Help out by listening to our music on Spotify, and watching our videos on YouTube. To contribute to WannaSmile or related projects under Ankom Studios, join the Discord! Help us grow the content hosted here, and keep on smiling.
-        </p>
-      </div>
-    </div>
+    <button type="button" id="profileSaveBtn" class="overlay-btn save-btn">Save Changes</button>
   </div>
-
-  <div class="rate-overlay" id="projectRateOverlay">
-    <div class="rate-modal">
-      <h3>Rate this project</h3>
-      <p>Submitted to a shared, public tally — separate from the per-preview ratings above.</p>
-      <div class="rate-stars" id="projectRateStars">
-        <img data-v="1" src=".documentation/pages/layout/assets/emptystar.png" alt="1 star" />
-        <img data-v="2" src=".documentation/pages/layout/assets/emptystar.png" alt="2 stars" />
-        <img data-v="3" src=".documentation/pages/layout/assets/emptystar.png" alt="3 stars" />
-        <img data-v="4" src=".documentation/pages/layout/assets/emptystar.png" alt="4 stars" />
-        <img data-v="5" src=".documentation/pages/layout/assets/emptystar.png" alt="5 stars" />
-      </div>
-      <div class="rate-thanks" id="projectRateThanks">Thanks for rating!</div>
-    </div>
-  </div>
-
-  <div class="lightbox-overlay" id="lightboxOverlay">
-    <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close">✕</button>
-    <button class="lightbox-nav lightbox-nav-prev" id="lightboxPrev" type="button" aria-label="Previous preview">‹</button>
-    <button class="lightbox-nav lightbox-nav-next" id="lightboxNext" type="button" aria-label="Next preview">›</button>
-    <div class="lightbox-content">
-      <h3 class="lightbox-title" id="lightboxTitle"></h3>
-      <img class="lightbox-img" id="lightboxImg" src="" alt="" />
-
-      <div class="lightbox-stars" id="lightboxStars">
-        <img data-v="1" src=".documentation/pages/layout/assets/emptystar.png" alt="1 star" />
-        <img data-v="2" src=".documentation/pages/layout/assets/emptystar.png" alt="2 stars" />
-        <img data-v="3" src=".documentation/pages/layout/assets/emptystar.png" alt="3 stars" />
-        <img data-v="4" src=".documentation/pages/layout/assets/emptystar.png" alt="4 stars" />
-        <img data-v="5" src=".documentation/pages/layout/assets/emptystar.png" alt="5 stars" />
-      </div>
-
-      <div class="lightbox-reactions" id="lightboxReactions"></div>
-
-      <div class="lightbox-stats">
-        <span id="lightboxAvgRating"></span>
-        <span id="lightboxReactionSummary"></span>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    <a class="footer-brand" href="https://ankomstudios.com" target="_blank" rel="noopener noreferrer">
-      <img src=".documentation/pages/layout/assets/logoPixel.gif" alt="Ankom Studios" />
-      ankomstudios
-    </a>
-    <span class="footer-sep">·</span>
-    <a href="https://vnstudioelan.itch.io" target="_blank" rel="noopener noreferrer">View all by Studio Élan</a>
-    <span class="footer-sep">·</span>
-    <a href="#">Report</a>
-    <span class="footer-sep">·</span>
-    <a href="#">Embed</a>
-    <span class="footer-sep">·</span>
-    <span>Updated 12 days ago</span>
-    <span class="footer-spacer"></span>
-    <span class="footer-breadcrumb"><a href="#">Projects</a> › <a href="#">Visual Novel</a> › <a href="#">Free</a></span>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-  <script src="assets/system/js/profile.js"></script>
-  <script>
-    (function () {
-      // ---- Supabase (anon/public key — safe to embed client-side, access
-      // is governed by Row Level Security policies on each table). ----
-      // Run this once in the Supabase SQL editor before these features will
-      // actually work (the anon key can't create tables/triggers itself).
-      //
-      //   create table public.comments (
-      //     id bigint generated always as identity primary key,
-      //     preview_key text not null,   -- image src this comment is on
-      //     author text not null default 'Anonymous',
-      //     text text not null,
-      //     created_at timestamptz not null default now()
-      //   );
-      //   alter table public.comments enable row level security;
-      //   create policy "public read" on public.comments for select using (true);
-      //   create policy "public insert" on public.comments for insert with check (true);
-      //
-      //   create table public.project_ratings (
-      //     id bigint generated always as identity primary key,
-      //     rating numeric(3,2) not null check (rating between 0.33 and 5),
-      //     created_at timestamptz not null default now()
-      //   );
-      //   -- numeric, not smallint: the picker now has third-star precision
-      //   -- (1/3, 2/3, 1, 1.33, ... 5), not just whole 1-5 values. If you
-      //   -- already created this table with "rating smallint", run:
-      //   --   alter table public.project_ratings alter column rating type numeric(3,2);
-      //   alter table public.project_ratings enable row level security;
-      //   create policy "public read"   on public.project_ratings for select using (true);
-      //   create policy "public insert" on public.project_ratings for insert with check (true);
-      const SUPABASE_URL      = "https://rdaofsjzbhbzfbxdkwvk.supabase.co";
-      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkYW9mc2p6YmhiemZieGRrd3ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NDA2NDgsImV4cCI6MjEwMzUxNjY0OH0.AIiZqArwRAHmrWxug6CqvGHQqCj3D_8DWy5dTPvFtvk";
-      const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      // ---- Star rating images (emptystar/13star/23star/fullstar.png) ----
-      // Interactive pickers (click-to-rate) only ever need the two extremes
-      // per star (full once selected/hovered-over, empty otherwise). The
-      // average-rating display needs the two in-between thirds too, since
-      // it renders a precise fractional value (e.g. 3.6/5) across 5 stars.
-      const STAR_EMPTY      = ".documentation/pages/layout/assets/emptystar.png";
-      const STAR_ONE_THIRD  = ".documentation/pages/layout/assets/13star.png";
-      const STAR_TWO_THIRDS = ".documentation/pages/layout/assets/23star.png";
-      const STAR_FULL       = ".documentation/pages/layout/assets/fullstar.png";
-
-      function starImageForFraction(fraction) {
-        const stage = Math.round(Math.max(0, Math.min(1, fraction)) * 3);
-        if (stage <= 0) return STAR_EMPTY;
-        if (stage === 1) return STAR_ONE_THIRD;
-        if (stage === 2) return STAR_TWO_THIRDS;
-        return STAR_FULL;
-      }
-
-      function renderAvgStarRow(container, avg) {
-        container.innerHTML = "";
-        for (let i = 0; i < 5; i++) {
-          const fraction = Math.max(0, Math.min(1, avg - i));
-          const img = document.createElement("img");
-          img.src = starImageForFraction(fraction);
-          img.alt = "";
-          container.appendChild(img);
-        }
-      }
-
-      // Wires a 5-<img> click-to-rate widget with third-star precision: each
-      // star is split into 3 horizontal zones, so hovering/clicking its
-      // left/middle/right third picks up the 1/3, 2/3, or full value for
-      // that star (15 possible values total, not just 1-5) — using the
-      // same 4 images the average display uses, via starImageForFraction.
-      function setupStarPicker(container, getCurrentValue, onRate) {
-        const stars = Array.from(container.querySelectorAll("img"));
-        function paintForValue(value) {
-          stars.forEach((img, i) => {
-            img.src = starImageForFraction(Math.max(0, Math.min(1, value - i)));
-          });
-        }
-        function valueFromEvent(index, e, img) {
-          const rect = img.getBoundingClientRect();
-          const relX = (e.clientX - rect.left) / rect.width;
-          const third = Math.min(2, Math.max(0, Math.floor(relX * 3)));
-          return index + (third + 1) / 3;
-        }
-        stars.forEach((img, index) => {
-          img.addEventListener("mousemove", (e) => paintForValue(valueFromEvent(index, e, img)));
-          img.addEventListener("click", (e) => onRate(Math.round(valueFromEvent(index, e, img) * 3) / 3));
-        });
-        container.addEventListener("mouseleave", () => paintForValue(getCurrentValue()));
-        paintForValue(getCurrentValue());
-      }
-
-      // ---- Live stats panel (#sideStats) ----
-      //   #statViewers    — realtime presence count (Supabase Realtime channel)
-      //   #statComments   — total row count in public.comments (site-wide)
-      //   #statProjectRating — average of public.project_ratings — the PROJECT-level
-      //                     rating (the "Rate this project" button, id="rateBtn"),
-      //                     kept separate from per-preview-image ratings,
-      //                     which stay local per browser.
-
-      const statViewers    = document.getElementById("statViewers");
-      const statComments   = document.getElementById("statComments");
-      const statProjectRating = document.getElementById("statProjectRating");
-
-      // A stable per-browser id (localStorage, shared across tabs of the
-      // same origin — unlike sessionStorage, which is per-tab) so opening
-      // the page in several tabs still tracks as one presence key, not one
-      // per tab. Different browsers/devices still get their own id.
-      function getClientId() {
-        const STORAGE_KEY = "vtuber_client_id";
-        let id = localStorage.getItem(STORAGE_KEY);
-        if (!id) {
-          id = crypto.randomUUID ? crypto.randomUUID() : String(Math.random());
-          try { localStorage.setItem(STORAGE_KEY, id); } catch (_) {}
-        }
-        return id;
-      }
-
-      const viewerChannel = sb.channel("vtuber-test-viewers", {
-        config: { presence: { key: getClientId() } },
-      });
-      viewerChannel
-        .on("presence", { event: "sync" }, () => {
-          const state = viewerChannel.presenceState();
-          statViewers.textContent = Object.keys(state).length;
-        })
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") viewerChannel.track({ online_at: new Date().toISOString() });
-        });
-
-      // Comments are static placeholder content now (no live backend), so
-      // the count just reflects what's actually shown in .comment-list
-      // instead of querying Supabase's now-disconnected comments table.
-      function refreshCommentsCount() {
-        statComments.textContent = document.querySelectorAll(".comment-list .comment").length;
-      }
-      refreshCommentsCount();
-
-      const avgRatingStars = document.getElementById("avgRatingStars");
-      async function refreshProjectRating() {
-        const { data, error } = await sb.from("project_ratings").select("rating");
-        const count = error || !data ? 0 : data.length;
-        statProjectRating.textContent = `${count} rating${count === 1 ? "" : "s"}`;
-        const avg = count ? data.reduce((sum, r) => sum + r.rating, 0) / count : 0;
-        renderAvgStarRow(avgRatingStars, avg);
-      }
-      refreshProjectRating();
-
-      // ---- Rate this project (separate table from per-preview-image ratings) ----
-      const rateBtn        = document.getElementById("rateBtn");
-      const projectRateOverlay = document.getElementById("projectRateOverlay");
-      const projectRateStars   = document.getElementById("projectRateStars");
-      const projectRateThanks  = document.getElementById("projectRateThanks");
-
-      function closeProjectRate() {
-        projectRateOverlay.classList.remove("visible");
-        setTimeout(() => { projectRateOverlay.style.display = "none"; }, 250);
-      }
-
-      let projectRateSelected = 0;
-
-      function openProjectRate(e) {
-        if (e) e.preventDefault();
-        projectRateThanks.classList.remove("visible");
-        projectRateSelected = 0;
-        projectRateStars.querySelectorAll("img").forEach((img) => { img.src = STAR_EMPTY; });
-        projectRateOverlay.style.display = "flex";
-        requestAnimationFrame(() => projectRateOverlay.classList.add("visible"));
-      }
-
-      rateBtn.addEventListener("click", openProjectRate);
-      document.getElementById("sideRateProjectBtn").addEventListener("click", openProjectRate);
-      projectRateOverlay.addEventListener("click", (e) => {
-        if (e.target === projectRateOverlay) closeProjectRate();
-      });
-      setupStarPicker(projectRateStars, () => projectRateSelected, async (v) => {
-        projectRateSelected = v;
-        const { error } = await sb.from("project_ratings").insert({ rating: v });
-        if (!error) {
-          projectRateThanks.classList.add("visible");
-          refreshProjectRating();
-          setTimeout(closeProjectRate, 900);
-        }
-      });
-
-      const toggleBtn = document.getElementById("infoToggleBtn");
-      const panel     = document.getElementById("infoPanel");
-      toggleBtn.addEventListener("click", () => {
-        const open = panel.classList.toggle("open");
-        toggleBtn.classList.toggle("open", open);
-      });
-
-      // ---- Featured comments: placeholder carousel, one at a time, wraps
-      // first<->last. No "featured by" badge — the section heading already
-      // says "Featured comments," so it'd just be redundant. Same
-      // time/vote data as their counterpart in the regular comment list,
-      // since there's no backend — these are the same comments, featured. ----
-      const FEATURED_COMMENTS = [
-        {
-          author: "callunavulgaris",
-          avatar: ".documentation/pages/layout/assets/expfp1.jpg",
-          time: "6 days ago",
-          votes: "(+7/-1)",
-          text: "Angelilyca is way too relatable, 10/10 rival design.",
-        },
-        {
-          author: "cherryfeatherr",
-          avatar: ".documentation/pages/layout/assets/expfp2.jpg",
-          time: "8 days ago",
-          votes: "(+22/-4)",
-          text: "The convention lobby background art is gorgeous, hope we get more scenes like that in the full release.",
-        },
-        {
-          author: "moonpetal_frog",
-          avatar: ".documentation/pages/layout/assets/expfp3.jpg",
-          time: "12 days ago",
-          votes: "(+15/-2)",
-          text: "the customization options in the demo were so much fun, spent way too long in the fit check screen honestly",
-        },
-        {
-          author: "starr_dreamz",
-          avatar: ".documentation/pages/layout/assets/expfp4.gif",
-          time: "1 day ago",
-          votes: "(+19/-2)",
-          premium: true,
-          text: "The reflection lighting during the escalator scene is unreal, this project's presentation punches way above \"demo\" weight.",
-        },
-      ];
-
-      const featuredCommentCard = document.getElementById("featuredCommentCard");
-      let featuredIndex = 0;
-
-      function renderFeaturedComment(index) {
-        const c = FEATURED_COMMENTS[index];
-        featuredCommentCard.innerHTML = `
-          <div class="comment-votes">
-            <button type="button" class="vote-btn" disabled aria-label="Upvote">▲</button>
-            <button type="button" class="vote-btn" disabled aria-label="Downvote">▼</button>
-          </div>
-          <img src="${c.avatar}" alt="" />
-          <div>
-            <div class="featured-comment-meta">
-              <a href="#" class="comment-username-link${c.premium ? " premium-username" : ""}">${c.author}</a>
-              · ${c.time} <span class="comment-votecount">${c.votes}</span>
-            </div>
-            <div class="featured-comment-body">${c.text}</div>
-          </div>
-        `;
-      }
-
-      function showFeaturedAt(index) {
-        featuredIndex = ((index % FEATURED_COMMENTS.length) + FEATURED_COMMENTS.length) % FEATURED_COMMENTS.length;
-        renderFeaturedComment(featuredIndex);
-      }
-
-      document.getElementById("featuredPrev").addEventListener("click", () => showFeaturedAt(featuredIndex - 1));
-      document.getElementById("featuredNext").addEventListener("click", () => showFeaturedAt(featuredIndex + 1));
-      showFeaturedAt(0);
-
-      // Username "links" go nowhere — delegated on document so this still
-      // catches the featured-comments card, which re-renders its markup
-      // (and thus its anchor) every time the carousel changes.
-      document.addEventListener("click", (e) => {
-        if (e.target.closest(".comment-username-link")) e.preventDefault();
-      });
-
-      // ---- Comments: placeholder, no backend — posting just surfaces the
-      // "log in" disclaimer instead of actually submitting anything. ----
-      const commentPostBtn  = document.getElementById("commentPostBtn");
-      const commentLoginNote = document.getElementById("commentLoginNote");
-      // Prevent the textarea's blur (which would hide this button again,
-      // since visibility is driven by :focus/:placeholder-shown) from
-      // racing the click and swallowing it.
-      commentPostBtn.addEventListener("mousedown", (e) => e.preventDefault());
-      commentPostBtn.addEventListener("click", () => {
-        commentLoginNote.classList.add("visible");
-      });
-
-      // ---- Floating action buttons: collapse to a hamburger on scroll ----
-      // Once collapsed (by scroll or by a previous visit), it stays collapsed —
-      // scrolling back up does NOT auto re-expand it anymore. The preference
-      // is saved, so a reload (or scrolling down then back up) keeps it collapsed
-      // until the hamburger is explicitly clicked open.
-      const floatingActions = document.getElementById("floatingActions");
-      const hamburgerBtn    = document.getElementById("hamburgerBtn");
-      const COLLAPSE_AT     = 40;
-      const COLLAPSE_KEY    = "vtuber_actions_collapsed";
-
-      let collapsed = localStorage.getItem(COLLAPSE_KEY) === "true";
-
-      function applyCollapsedState() {
-        floatingActions.classList.toggle("collapsed", collapsed);
-      }
-
-      function setCollapsed(value) {
-        collapsed = value;
-        try { localStorage.setItem(COLLAPSE_KEY, String(value)); } catch (_) {}
-        applyCollapsedState();
-      }
-
-      applyCollapsedState();
-
-      window.addEventListener("scroll", () => {
-        if (!collapsed && window.scrollY > COLLAPSE_AT) setCollapsed(true);
-      }, { passive: true });
-
-      hamburgerBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        floatingActions.classList.toggle("dropdown-open");
-      });
-
-      document.addEventListener("click", (e) => {
-        if (floatingActions.classList.contains("dropdown-open") && !floatingActions.contains(e.target)) {
-          floatingActions.classList.remove("dropdown-open");
-        }
-      });
-
-      // ---- Preview lightbox: per-image rating + reactions (local) + comments (Supabase) ----
-      // Star rating and reactions stay in localStorage — per browser, not a
-      // real shared aggregate. Comments now live in Supabase's `comments`
-      // table (see schema note above), keyed by preview_key = the image's
-      // own src, so they're genuinely shared and feed the sitewide
-      // #statComments total too.
-      const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉"];
-
-      const lightboxOverlay      = document.getElementById("lightboxOverlay");
-      const lightboxImg          = document.getElementById("lightboxImg");
-      const lightboxTitle        = document.getElementById("lightboxTitle");
-      const lightboxStars        = document.getElementById("lightboxStars");
-      const lightboxReactions    = document.getElementById("lightboxReactions");
-      const lightboxAvgRating    = document.getElementById("lightboxAvgRating");
-      const lightboxReactionSum  = document.getElementById("lightboxReactionSummary");
-      const lightboxClose        = document.getElementById("lightboxClose");
-      const lightboxPrev         = document.getElementById("lightboxPrev");
-      const lightboxNext         = document.getElementById("lightboxNext");
-      const screenshotStack      = document.getElementById("screenshotStack");
-      const previewImgs          = Array.from(screenshotStack.querySelectorAll("img"));
-
-      let currentPreviewKey   = null; // localStorage key, for rating/reactions
-      let currentPreviewIndex = -1;   // index into previewImgs, for carousel nav
-
-      function previewKey(src) { return `vtuber_preview_${src}`; }
-
-      function loadPreviewData(key) {
-        try {
-          const data = JSON.parse(localStorage.getItem(key) || "null") || {};
-          return {
-            rating: data.rating || 0,
-            reactions: data.reactions || {},
-          };
-        } catch (_) {
-          return { rating: 0, reactions: {} };
-        }
-      }
-      function savePreviewData(key, data) {
-        try { localStorage.setItem(key, JSON.stringify(data)); } catch (_) {}
-      }
-
-      function renderStars(rating) {
-        lightboxStars.querySelectorAll("img").forEach((img, i) => {
-          img.src = starImageForFraction(Math.max(0, Math.min(1, rating - i)));
-        });
-      }
-
-      function renderReactions(key, data) {
-        lightboxReactions.innerHTML = "";
-        REACTION_EMOJIS.forEach((emoji) => {
-          const r = data.reactions[emoji] || { count: 0, active: false };
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "reaction-pill" + (r.active ? " active" : "");
-          btn.innerHTML = `${emoji} <span class="reaction-count">${r.count}</span>`;
-          btn.addEventListener("click", () => {
-            const cur = data.reactions[emoji] || { count: 0, active: false };
-            cur.active = !cur.active;
-            cur.count = Math.max(0, cur.count + (cur.active ? 1 : -1));
-            data.reactions[emoji] = cur;
-            savePreviewData(key, data);
-            renderReactions(key, data);
-            renderStats(data);
-          });
-          lightboxReactions.appendChild(btn);
-        });
-      }
-
-      function renderStats(data) {
-        lightboxAvgRating.textContent = data.rating > 0
-          ? `Average rating: ${data.rating.toFixed(2)}/5 (1 rating)`
-          : "No ratings yet";
-        const total = Object.values(data.reactions || {}).reduce((sum, r) => sum + (r.count || 0), 0);
-        lightboxReactionSum.textContent = `${total} reaction${total === 1 ? "" : "s"} total`;
-      }
-
-      function openLightbox(img) {
-        const src = img.getAttribute("src");
-        const key = previewKey(src);
-        currentPreviewKey = key;
-        currentPreviewIndex = previewImgs.indexOf(img);
-        const data = loadPreviewData(key);
-
-        lightboxImg.src = src;
-        lightboxImg.alt = img.dataset.title || "";
-        lightboxTitle.textContent = img.dataset.title || "";
-
-        renderStars(data.rating);
-        renderReactions(key, data);
-        renderStats(data);
-
-        lightboxOverlay.style.display = "flex";
-        requestAnimationFrame(() => lightboxOverlay.classList.add("visible"));
-      }
-
-      // Carousel: wraps around both ends (last -> first, first -> last).
-      function showPreviewAt(index) {
-        if (!previewImgs.length) return;
-        const wrapped = ((index % previewImgs.length) + previewImgs.length) % previewImgs.length;
-        openLightbox(previewImgs[wrapped]);
-      }
-
-      function closeLightbox() {
-        lightboxOverlay.classList.remove("visible");
-        setTimeout(() => { lightboxOverlay.style.display = "none"; }, 250);
-      }
-
-      screenshotStack.querySelectorAll("img").forEach((img) => {
-        img.addEventListener("click", () => openLightbox(img));
-      });
-
-      lightboxClose.addEventListener("click", closeLightbox);
-      lightboxOverlay.addEventListener("click", (e) => {
-        if (e.target === lightboxOverlay) closeLightbox();
-      });
-      lightboxPrev.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showPreviewAt(currentPreviewIndex - 1);
-      });
-      lightboxNext.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showPreviewAt(currentPreviewIndex + 1);
-      });
-      document.addEventListener("keydown", (e) => {
-        if (!lightboxOverlay.classList.contains("visible")) return;
-        if (e.key === "Escape") closeLightbox();
-        if (e.key === "ArrowLeft") showPreviewAt(currentPreviewIndex - 1);
-        if (e.key === "ArrowRight") showPreviewAt(currentPreviewIndex + 1);
-      });
-
-      setupStarPicker(
-        lightboxStars,
-        () => (currentPreviewKey ? loadPreviewData(currentPreviewKey).rating : 0),
-        (v) => {
-          if (!currentPreviewKey) return;
-          const data = loadPreviewData(currentPreviewKey);
-          data.rating = v;
-          savePreviewData(currentPreviewKey, data);
-          renderStars(data.rating);
-          renderStats(data);
-        }
-      );
-
-      // ---- Match the comment section's bottom edge to the last preview
-      // image's bottom edge, so both columns end at the same y. Extra
-      // comments scroll inside .comment-list (flex + overflow-y in CSS)
-      // instead of growing the container past that point.
-      const commentSection = document.querySelector(".comment-section");
-      function syncCommentSectionHeight() {
-        if (!commentSection || !previewImgs.length) return;
-        const lastPreview = previewImgs[previewImgs.length - 1];
-        const targetBottom = lastPreview.getBoundingClientRect().bottom;
-        const sectionTop = commentSection.getBoundingClientRect().top;
-        const height = targetBottom - sectionTop;
-        if (height > 150) commentSection.style.height = `${height}px`;
-      }
-      window.addEventListener("load", syncCommentSectionHeight);
-      window.addEventListener("resize", syncCommentSectionHeight);
-      syncCommentSectionHeight();
-
-      // ---- Makeshift ad slots ----
-      // Pulls markup for each slot from a server-rotation endpoint and
-      // drops it in. example.com is a placeholder — point p= at a real
-      // ad server's admin-ajax.php when there is one. The catch is there
-      // because example.com doesn't actually serve this endpoint, so this
-      // fails quietly and leaves the "Advertisement" placeholder text in
-      // place instead of spamming the console on every load.
-      function loadAdSlot(boxId, slot) {
-        fetch(`//example.com/wp-admin/admin-ajax.php?action=aa-server-select&p=${slot}`)
-          .then((response) => response.text())
-          .then((body) => {
-            const doc = new DOMParser().parseFromString(body, "text/html");
-            const adContainer = doc.querySelector("div");
-            if (adContainer) document.querySelector(`#${boxId}`).innerHTML = adContainer.innerHTML;
-          })
-          .catch(() => {});
-      }
-      loadAdSlot("server-01-box", "server-01");
-      loadAdSlot("server-02-box", "server-02");
-      loadAdSlot("server-03-box", "server-03");
-      loadAdSlot("server-04-box", "server-04");
-
-      // ---- Custom video player (native controls stripped, replaced with
-      // the .vp-* bar above) — one shared initializer per .video-player. ----
-      function formatVideoTime(seconds) {
-        if (!isFinite(seconds) || seconds < 0) return "0:00";
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60).toString().padStart(2, "0");
-        return `${m}:${s}`;
-      }
-
-      function initVideoPlayer(container) {
-        const video        = container.querySelector(".vp-video");
-        const playBtn       = container.querySelector(".vp-play");
-        const muteBtn        = container.querySelector(".vp-mute");
-        const volumeSlider   = container.querySelector(".vp-volume");
-        const progress       = container.querySelector(".vp-progress");
-        const progressFill   = container.querySelector(".vp-progress-fill");
-        const curTimeEl      = container.querySelector(".vp-time-current");
-        const durTimeEl      = container.querySelector(".vp-time-duration");
-        const fsBtn          = container.querySelector(".vp-fullscreen");
-
-        function setPlayIcon(playing) {
-          playBtn.innerHTML = playing
-            ? '<i class="fa-solid fa-pause"></i>'
-            : '<i class="fa-solid fa-play"></i>';
-        }
-        function setMuteIcon() {
-          muteBtn.innerHTML = (video.muted || video.volume === 0)
-            ? '<i class="fa-solid fa-volume-xmark"></i>'
-            : '<i class="fa-solid fa-volume-high"></i>';
-        }
-
-        playBtn.addEventListener("click", () => {
-          if (video.paused) video.play(); else video.pause();
-        });
-        video.addEventListener("play",  () => setPlayIcon(true));
-        video.addEventListener("pause", () => setPlayIcon(false));
-        video.addEventListener("ended", () => setPlayIcon(false));
-
-        video.addEventListener("loadedmetadata", () => {
-          durTimeEl.textContent = formatVideoTime(video.duration);
-        });
-        video.addEventListener("timeupdate", () => {
-          curTimeEl.textContent = formatVideoTime(video.currentTime);
-          const pct = video.duration ? (video.currentTime / video.duration) * 100 : 0;
-          progressFill.style.width = `${pct}%`;
-        });
-
-        progress.addEventListener("click", (e) => {
-          if (!video.duration) return;
-          const rect = progress.getBoundingClientRect();
-          const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-          video.currentTime = pct * video.duration;
-        });
-
-        muteBtn.addEventListener("click", () => {
-          video.muted = !video.muted;
-          setMuteIcon();
-        });
-        volumeSlider.addEventListener("input", () => {
-          video.volume = parseFloat(volumeSlider.value);
-          video.muted = video.volume === 0;
-          setMuteIcon();
-        });
-
-        fsBtn.addEventListener("click", () => {
-          if (container.requestFullscreen) container.requestFullscreen();
-          else if (video.requestFullscreen) video.requestFullscreen();
-        });
-
-        video.addEventListener("click", () => playBtn.click());
-      }
-
-      document.querySelectorAll(".video-player").forEach(initVideoPlayer);
-    })();
-  </script>
+</div>
+
+<style>
+#profileOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+#profileOverlay.visible {
+  display: flex;
+}
+#profileOverlayPanel {
+background:
+  linear-gradient(rgba(34,34,34,0.1), rgba(34,34,34,0.1)),
+  url('https://raw.githubusercontent.com/wannasmile4evr/wannasmile4evr.github.io/main/asssets/media/themes/redux/system-media/headerBg.png'),
+  #222;
+
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;  border-radius: 16px;
+  padding: 28px 24px 24px;
+  width: 380px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+  box-shadow: 0 6px 32px rgba(0,0,0,.7);
+  font-family: monospace;
+  color: #fff;
+  position: relative;
+}
+#profileOverlayClose {
+  position: absolute;
+  top: 12px; right: 14px;
+  background: none; border: none;
+  color: #aaa; font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+}
+#profileOverlayClose:hover { color: #fff; }
+#profileOverlayPanel h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+.profile-preview {
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #444;
+  margin-bottom: 10px;
+  display: block;
+  margin-left: auto; margin-right: auto;
+}
+.profile-overlay-username {
+  font-size: 15px;
+  margin-bottom: 16px;
+  opacity: .8;
+}
+#profileOverlayPanel label {
+  display: block;
+  text-align: left;
+  font-size: 13px;
+  margin-bottom: 4px;
+  opacity: .75;
+}
+#profileOverlayPanel input[type="file"] {
+  margin: 6px 0 10px;
+  color: #ccc;
+  font-size: 13px;
+}
+#profileOverlayPanel input[type="text"] {
+  width: 85%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  margin-bottom: 14px;
+  font-size: 15px;
+  background: #333;
+  color: #fff;
+}
+.overlay-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 4px;
+  transition: transform .15s, background .15s;
+  background: #444;
+}
+.overlay-btn:hover { transform: scale(1.04); background: #555; }
+.remove-btn  { background: #555; }
+.pixel-btn   { background: #4a3d7a; }
+.pixel-btn:hover { background: #6a5daa; }
+.save-btn    { background: #c0392b; }
+.save-btn:hover { background: #e74c3c; }
+</style>
+
+<script src="../js/utils.js"></script>
+<script src="../js/themify.js"></script>
+<script src="../js/sanitizer.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+<script src="../js/profile.js"></script>
+<script src="../js/settings.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/quotes.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/boom.js"></script>
+<script src="../js/panic.js"></script>
+<script src="../js/shortcuts.js"></script>
+<script src="../js/widgets.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/gridSettings.js"></script>
 
 </body>
 </html>
