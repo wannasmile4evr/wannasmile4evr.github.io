@@ -1,0 +1,2483 @@
+"use strict";
+
+(function initScrollPersistence() {
+  const saveScroll = debounce(() => {
+    sessionStorage.setItem("scrollY", String(Math.round(window.scrollY)));
+  }, 100);
+  window.addEventListener("scroll", saveScroll, { passive: true });
+
+  window._restoreScrollY = function () {
+    const saved = parseInt(sessionStorage.getItem("scrollY") || "0", 10);
+    if (!saved) return;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: saved, behavior: "instant" })
+      )
+    );
+  };
+})();
+
+(() => {
+  const PAGE_ACCEL     = 0.9;
+  const PAGE_FRICTION  = 0.85;
+  const PAGE_THRESHOLD = 1;
+  const TAP_COOLDOWN   = 300;
+
+  let velocity = 0, lastFlip = 0;
+  const keys = { left: false, right: false };
+
+  const canFlip = () =>
+    typeof window.nextPage === "function" &&
+    typeof window.prevPage === "function" &&
+    performance.now() - lastFlip > TAP_COOLDOWN;
+
+  const flipNext = () => { if (!canFlip()) return; lastFlip = performance.now(); window.nextPage(); };
+  const flipPrev = () => { if (!canFlip()) return; lastFlip = performance.now(); window.prevPage(); };
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight") { keys.right = true; if (!e.repeat) flipNext(); }
+    if (e.key === "ArrowLeft")  { keys.left  = true; if (!e.repeat) flipPrev(); }
+  });
+  document.addEventListener("keyup", e => {
+    if (e.key === "ArrowRight") keys.right = false;
+    if (e.key === "ArrowLeft")  keys.left  = false;
+  });
+
+  (function loop() {
+    if (keys.right) velocity += PAGE_ACCEL;
+    if (keys.left)  velocity -= PAGE_ACCEL;
+    velocity *= PAGE_FRICTION;
+    if (velocity >  PAGE_THRESHOLD) { flipNext(); velocity = 0; }
+    if (velocity < -PAGE_THRESHOLD) { flipPrev(); velocity = 0; }
+    if (Math.abs(velocity) < 0.01) velocity = 0;
+    requestAnimationFrame(loop);
+  })();
+})();
+
+function initGifDrag(gif) {
+  const SWAY_STRENGTH = 0.6;
+  const RETURN_SPEED  = 0.08;
+  const DROP_DURATION = 1600;
+
+  const _getDragTheme = () =>
+    document.documentElement.getAttribute("theme") || DEFAULT_THEME;
+
+  let dragging = false, dropping = false;
+  let mouseX = 0, mouseY = 0, lastMouseX = 0, rotation = 0;
+
+  new MutationObserver(() => {
+    if (gif.style.display !== "none") gif.style.pointerEvents = "auto";
+  }).observe(gif, { attributes: true, attributeFilter: ["style"] });
+
+  const _applyDragGif = (key) => {
+    const theme = _getDragTheme();
+    if (typeof applyGifToImg === "function") {
+      applyGifToImg(gif, theme, key);
+    } else {
+      gif.src = getThemeGifSrc(theme, key) || getThemeGifSrc(theme, "searching");
+    }
+  };
+
+  gif.addEventListener("mousedown", (e) => {
+    if (dropping) return;
+    dragging = true;
+    _applyDragGif("held");
+    gif.style.cursor = "grabbing";
+    mouseX = e.clientX; mouseY = e.clientY; lastMouseX = mouseX;
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+
+  document.addEventListener("mouseup", () => {
+    if (!dragging) return;
+    dragging = false; dropping = true;
+    gif.style.cursor = "grab";
+    _applyDragGif("drop");
+    gif.style.top = (parseFloat(gif.style.top) || 0) + 6 + "px";
+    setTimeout(() => { _applyDragGif("searching"); dropping = false; }, DROP_DURATION);
+  });
+
+  (function tick() {
+    if (dragging) {
+      rotation += (mouseX - lastMouseX) * SWAY_STRENGTH;
+      rotation *= 0.9;
+      gif.style.left = mouseX + "px";
+      gif.style.top  = mouseY + "px";
+    } else {
+      rotation *= (1 - RETURN_SPEED);
+    }
+    gif.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
+    lastMouseX = mouseX;
+    requestAnimationFrame(tick);
+  })();
+}
+
+window.addEventListener("load", () => {
+  if (typeof Crate !== "undefined") {
+    new Crate({ server: "1451796462517096642", channel: "1451796463368667218" });
+  }
+});
+
+(() => {
+
+  function initElements() {
+    const $ = (sel) => {
+      try {
+        if (!sel) return null;
+        return /^[A-Za-z0-9\-_]+$/.test(sel)
+          ? document.getElementById(sel)
+          : document.querySelector(sel) || null;
+      } catch { return null; }
+    };
+
+    const devContainer  = document.getElementById("dev-build-container");
+    const mainContainer = document.getElementById("container");
+
+    let resolvedContainer, containerMode;
+    if (devContainer) {
+      resolvedContainer = devContainer;
+      containerMode     = "dev";
+    } else {
+      resolvedContainer = mainContainer;
+      containerMode     = "default";
+    }
+
+    window._containerMode = containerMode;
+
+    window.dom = {
+      container:          resolvedContainer,
+      pageIndicator:      $(".page-indicator") || $("#page-indicator"),
+      searchInput:        $("#searchInputHeader"),
+      searchBtn:          $("#searchBtnHeader"),
+      updatePopup:        $("#updatePopup"),
+      updatePopupContent: $(".update-popup-content"),
+      viewUpdateBtn:      $("#viewUpdateBtn"),
+      viewUpdateInfoBtn:  $("#viewUpdateInfoBtn"),
+      closeUpdateBtn:     $("#closeUpdateBtn"),
+      dontShowBtn:        $("#dontShowBtn"),
+      updateVideo:        $("#updateVideo"),
+    };
+
+    window.config = {
+      fallbackImage:    "https://raw.githubusercontent.com/01110010-00110101/01110010-00110101.github.io/main/system/images/404_blank.png",
+      fallbackLink:     "https://wnasmile.github.io./source/dino/",
+      // mydex.html's <head> sets WS_SHEET_URL and starts the asset fetch
+      // early; this literal is only the fallback for pages that don't.
+      sheetUrl:         window.WS_SHEET_URL || window.WS_ENDPOINTS.data,
+      devBuildUrl:      "",
+    };
+
+    // Sticker list + base path: stickers.js.
+
+    if (!window._activeFetchUrl) {
+      window._activeFetchUrl = (containerMode === "dev" || window._devBuildArmedAtLoad)
+        ? window.config.devBuildUrl
+        : window.config.sheetUrl;
+    }
+  }
+
+  // ── Favorites ─────────────────────────────────────────────────────────
+  // An ordered list of asset keys (lowercased titles), appended to as things
+  // are favorited — no timestamps, the list order *is* "when it was added".
+  // That order is also the favorites view's paging: FAV_PAGE_SIZE per page,
+  // independent of each asset's own sheet page (see renderPage). The ☆ on a
+  // card adds/removes; #fav-btn in the header switches the grid between
+  // main assets and favorites. Exported/cleared with the rest of the user's
+  // data under "ws_favorites" (see data.js).
+  const FAV_KEY        = "ws_favorites";
+  const FAV_LEGACY_KEY = "favorites";   // the old Set-based favorites
+  const FAV_PAGE_SIZE  = 75;            // same cap as a main-asset page
+  const IMG_WAIT_MS    = 10000;         // longest one icon may hold up its page's loader
+
+  function initFavorites() {
+    let list = [];
+    try {
+      let raw = localStorage.getItem(FAV_KEY);
+      // One-time carry-over of the old favorites so nobody loses theirs.
+      if (raw === null && localStorage.getItem(FAV_LEGACY_KEY) !== null) {
+        raw = localStorage.getItem(FAV_LEGACY_KEY);
+        localStorage.removeItem(FAV_LEGACY_KEY);
+      }
+      const v = JSON.parse(raw || "[]");
+      if (Array.isArray(v)) list = v;
+    } catch {}
+    list = [...new Set(list.map(s => safeStr(s).toLowerCase().trim()).filter(Boolean))];
+
+    let has = new Set(list);
+    const save = () => {
+      has = new Set(list);
+      try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch {}
+    };
+    save();
+
+    window.WS_Favorites = {
+      list: () => list.slice(),
+      has:  (key) => has.has(key),
+      // Adds to the end (newest last) or removes; returns the new state.
+      toggle(key) {
+        const on = !has.has(key);
+        list = on ? [...list, key] : list.filter(k => k !== key);
+        save();
+        return on;
+      },
+      viewOn: false, // true while the header toggle shows favorites
+    };
+
+    window.refreshCards = () => {
+      if (!window.assetsData || typeof createAssetCards !== "function") return [];
+      const savedY    = window.scrollY;
+      const promises  = createAssetCards(window.assetsData);
+      if (typeof renderPage === "function") renderPage();
+      if (typeof window.startPlaceholderCycle === "function") window.startPlaceholderCycle();
+      Promise.all(promises.map(p => p.promise ?? p).filter(Boolean))
+        .finally(() => window.scrollTo({ top: savedY, behavior: "instant" }));
+      return promises;
+    };
+  }
+
+  const _gifDurationCache = new Map();
+
+  const _getLoadedGifUrl = () => getThemeGifSrc(_getTheme(), "loaded");
+
+  function parseGifDuration(buf) {
+    const b = new Uint8Array(buf);
+    let ms = 0, i = 13;
+    if (b[10] & 0x80) i += 3 * (1 << ((b[10] & 0x07) + 1));
+    while (i < b.length) {
+      const block = b[i];
+      if (block === 0x3B) break;
+      if (block === 0x2C) {
+        i += 10;
+        if (b[i - 1] & 0x80) i += 3 * (1 << ((b[i - 1] & 0x07) + 1));
+        i++;
+        while (i < b.length) { const len = b[i++]; if (!len) break; i += len; }
+      } else if (block === 0x21) {
+        if (b[i + 1] === 0xF9) ms += (b[i + 4] | (b[i + 5] << 8)) * 10;
+        i += 2;
+        while (i < b.length) { const len = b[i++]; if (!len) break; i += len; }
+      } else { i++; }
+    }
+    return ms > 0 ? ms : 2000;
+  }
+
+  function getLoadedGifDuration() {
+    const url = _getLoadedGifUrl();
+    if (_gifDurationCache.has(url)) return Promise.resolve(_gifDurationCache.get(url));
+    return fetch(url)
+      .then(r => { if (!r.ok) throw new Error("fetch failed"); return r.arrayBuffer(); })
+      .then(buf => {
+        const ms = parseGifDuration(buf);
+        _gifDurationCache.set(url, ms);
+        return ms;
+      });
+  }
+
+  function getGifDuration(url) {
+    if (_gifDurationCache.has(url)) return Promise.resolve(_gifDurationCache.get(url));
+    return fetch(url)
+      .then(r => { if (!r.ok) throw new Error("fetch failed"); return r.arrayBuffer(); })
+      .then(buf => {
+        const ms = parseGifDuration(buf);
+        _gifDurationCache.set(url, ms);
+        return ms;
+      });
+  }
+
+  window._loaderSequenceRunning = false;
+
+  function _getTheme() {
+    return document.documentElement.getAttribute("theme") || DEFAULT_THEME;
+  }
+
+  function runLoaderSequence() {
+    if (window._loaderSequenceRunning) return;
+    const loader = document.getElementById("containerLoader");
+    if (!loader) return;
+    window._loaderSequenceRunning = true;
+
+    const finish = () => { loader.remove(); document.body.classList.remove("ws-loading"); };
+
+    const img = loader.querySelector("img");
+    if (!img) { finish(); return; }
+
+    getLoadedGifDuration()
+      .then(ms => {
+
+        applyGifToImg(img, _getTheme(), "loaded");
+        setTimeout(finish, ms);
+      })
+      .catch(() => {
+        applyGifToImg(img, _getTheme(), "loaded");
+        setTimeout(finish, 2000);
+      });
+  }
+
+  function runCrashSequence() {
+    if (window._loaderSequenceRunning) return;
+    const loader = document.getElementById("containerLoader");
+    if (!loader) return;
+    window._loaderSequenceRunning = true;
+
+    const img = loader.querySelector("img");
+    if (!img) return;
+
+    document.body.classList.remove("ws-loading");
+
+    const crashSrc = getThemeGifSrc(_getTheme(), "crash");
+    getGifDuration(crashSrc)
+      .catch(() => 2000)
+      .then(ms => {
+        applyGifToImg(img, _getTheme(), "crash");
+        setTimeout(() => { applyGifToImg(img, _getTheme(), "ded"); }, ms);
+      });
+  }
+
+  function _dismissPageLoader(pageNum) {
+    if (+window.currentPage !== pageNum) return;
+
+    runLoaderSequence();
+  }
+
+  function buildEmbedShell(embedSrc, title, fav) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title}</title>
+  <link rel="icon" href="${fav}" crossorigin="anonymous" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    embed { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: none; display: block; }
+    #refreshBtn {
+      position: fixed; top: 8px; right: 8px; z-index: 9999;
+      background: rgba(0,0,0,0.6); color: #fff; border: none;
+      border-radius: 6px; padding: 4px 10px; font-family: monospace;
+      font-size: 13px; cursor: pointer; opacity: 0.4; transition: opacity 0.2s;
+    }
+    #refreshBtn:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <embed id="frame" src="${embedSrc}" />
+  <button id="refreshBtn" title="Refresh"
+    onclick="document.getElementById('frame').src=document.getElementById('frame').src">↺</button>
+</body>
+</html>`;
+  }
+
+  async function fetchAndOpenHTML(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const raw     = await res.text();
+    const pageURL = URL.createObjectURL(
+      new Blob([sanitizeHTML(raw)], { type: "text/html;charset=utf-8" })
+    );
+    window.open(pageURL, "_blank");
+  }
+
+  // ── Row preprocessing ────────────────────────────────────────────────
+  // Everything the renderer, search, category menu and daily picks need is
+  // derived ONCE per row right after the fetch (status/type stacks, trimmed
+  // + lowercased strings, category columns), instead of being re-split and
+  // re-normalized in several places on every render.
+  const _assetMeta = new WeakMap();
+  let   _linkIndex = new Map();
+  let   _columns   = null;
+
+  const _FIELD_ALIASES = {
+    category:    ["category", "categories", "cat"],
+    subcategory: ["sub-category", "subcategory", "sub category", "subcat"],
+  };
+  const _normKey = (k) => String(k).toLowerCase().replace(/[\s_-]/g, "");
+
+  // Works out which real sheet headers map to each logical field once per
+  // fetch, so per-row lookups become plain property reads.
+  function _resolveColumns(rows) {
+    const keys = [], seen = new Set();
+    for (const r of rows) {
+      if (!r || typeof r !== "object") continue;
+      for (const k in r) if (!seen.has(k)) { seen.add(k); keys.push(k); }
+    }
+    const cols = {};
+    for (const field in _FIELD_ALIASES) {
+      const wanted = new Set(_FIELD_ALIASES[field].map(_normKey));
+      cols[field] = keys.filter((k) => wanted.has(_normKey(k)));
+    }
+    return cols;
+  }
+
+  const _firstFilled = (row, keys) => {
+    for (const k of keys) {
+      const v = row[k];
+      if (v == null) continue;
+      const str = String(v).trim();
+      if (str) return str;
+    }
+    return "";
+  };
+
+  const _parseStack = (raw) => {
+    const out = new Set();
+    const str = safeStr(raw);
+    if (!str) return out;
+    for (const part of str.toLowerCase().split("|")) {
+      const t = part.trim();
+      if (t) out.add(t);
+    }
+    return out;
+  };
+
+  const _MOVE_TO_TYPE = ["shiny", "disco", "animated", "grail"];
+  // type values (spaces, dashes and underscores ignored) that mark an
+  // asset as early access: "early access", "early-access", "tester", …
+  const _EARLY_ACCESS_TYPES = new Set(["earlyaccess", "tester", "testers"]);
+
+  function _buildMeta(row, cols) {
+    const statusRaw = safeStr(row.status).toLowerCase();
+    const statusSet = _parseStack(row.status);
+    const typeSet   = _parseStack(row.type);
+    const hidden    = statusRaw === "hide" || statusRaw === "hidden"
+                   || statusSet.has("ignore") || typeSet.has("ignore");
+
+    for (const t of _MOVE_TO_TYPE) {
+      if (statusSet.has(t)) { typeSet.add(t); statusSet.delete(t); }
+    }
+    if (typeSet.has("cooked")) { statusSet.add("cooked"); typeSet.delete("cooked"); }
+    // Early access / tester builds: kept off the main grid and daily picks,
+    // listed on the credits page instead (see _noteEarlyAccess).
+    const earlyAccess = [...typeSet].some((t) => _EARLY_ACCESS_TYPES.has(t.replace(/[\s_-]+/g, "")));
+
+    const title   = safeStr(row.title).trim();
+    const author  = safeStr(row.author).trim();
+    // Fixes bare-domain links (no "https://") from sheet data entry before
+    // they're used anywhere — see normalizeExternalLink in utils.js.
+    const rawLink = normalizeExternalLink(row.link);
+    const rawImg  = safeStr(row.image);
+    const cat     = _firstFilled(row, cols.category);
+    const sub     = _firstFilled(row, cols.subcategory);
+
+    return {
+      title, author,
+      titleLC:     title.toLowerCase(),
+      authorLC:    author.toLowerCase(),
+      link:        rawLink || config.fallbackLink,
+      linkTrim:    rawLink.trim(),
+      image:       rawImg || config.fallbackImage,
+      imageTrim:   rawImg.trim(),
+      page:        Number(row.page) || 1,
+      statusSet, typeSet, hidden, earlyAccess,
+      categoryRaw: cat,
+      subcategoryRaw: sub,
+      category:    cat.toLowerCase(),
+      subcategory: sub.toLowerCase(),
+      description: safeStr(row.description).trim(),
+      animated:    safeStr(row.animated).trim(),
+    };
+  }
+
+  function getAssetMeta(row) {
+    let m = _assetMeta.get(row);
+    if (!m) {
+      // Row that didn't come through prepareAssets (e.g. assetsData swapped
+      // in by another script) — build it lazily and cache it.
+      m = _buildMeta(row, _columns || _resolveColumns([row]));
+      _assetMeta.set(row, m);
+    }
+    return m;
+  }
+
+  function prepareAssets(raw) {
+    _columns = _resolveColumns(raw);
+    const rows      = [];
+    const linkIndex = new Map();
+    for (const row of raw) {
+      if (!row || typeof row !== "object") continue;
+      const m = _buildMeta(row, _columns);
+      if (!m.title && !m.linkTrim) continue;
+      _assetMeta.set(row, m);
+      if (m.linkTrim && !linkIndex.has(m.linkTrim)) linkIndex.set(m.linkTrim, m);
+      rows.push(row);
+    }
+    _linkIndex = linkIndex;
+    return rows;
+  }
+
+  // Shared "open this asset" behaviour — used by grid cards and the daily
+  // picks, so both honour the incognito modes and the html/txt loader.
+  async function openAsset(link) {
+    link = safeStr(link);
+    const incognitoMode = localStorage.getItem("incognitoMode") || "off";
+    const matched       = _linkIndex.get(link.trim());
+    const resolvedLink  = matched ? matched.linkTrim : link;
+    const renderTitle   = matched ? matched.title || "Embed" : "Embed";
+    const renderFav     = matched ? matched.imageTrim : "";
+
+    if (
+      /^https:\/\/cdn\.jsdelivr\.net\/.+\.html$/i.test(resolvedLink) ||
+      /\.html\.txt$|\.txt$/.test(resolvedLink)
+    ) {
+      try { await fetchAndOpenHTML(resolvedLink); }
+      catch (err) { console.error("[html/txt loader] fetch failed:", err); }
+      return;
+    }
+
+    if (incognitoMode === "blob" && matched) {
+      window.open(
+        URL.createObjectURL(
+          new Blob([buildEmbedShell(resolvedLink, renderTitle, renderFav)], { type: "text/html;charset=utf-8" })
+        ), "_blank"
+      );
+    } else if (incognitoMode === "about" && matched) {
+      const tab = window.open("about:blank", "_blank");
+      if (tab) { tab.document.open("text/html", "replace"); tab.document.write(buildEmbedShell(resolvedLink, renderTitle, renderFav)); tab.document.close(); }
+    } else {
+      window.open(resolvedLink, "_blank");
+    }
+  }
+
+  window.WS_getAssetMeta = getAssetMeta;
+  window.WS_openAsset    = openAsset;
+
+  (function injectIgnoreGuardCSS() {
+    if (document.getElementById("__ws_ignore_guard__")) return;
+    const s = document.createElement("style");
+    s.id = "__ws_ignore_guard__";
+    s.textContent = [
+      `.asset-card[data-ignore="true"]{display:none!important;opacity:0!important;width:0!important;height:0!important;margin:0!important;padding:0!important;pointer-events:none!important;overflow:hidden!important;}`,
+    ].join("");
+    document.head.appendChild(s);
+  })();
+
+  (function injectContainerAliasCSS() {
+    if (document.getElementById("__ws_container_alias__")) return;
+    const s = document.createElement("style");
+    s.id = "__ws_container_alias__";
+    s.textContent = `
+      /* Grid layout — mirrors #container in main.css */
+      #favorites-container,
+      #dev-build-container {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        justify-items: center;
+        gap: 15px;
+        padding: 20px;
+        background: transparent;
+        flex-grow: 1;
+        min-height: 0;
+        align-content: start;
+      }
+      @media (max-width: 800px) {
+        #favorites-container,
+        #dev-build-container {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      /* Card div — mirrors #container div */
+      #favorites-container div,
+      #dev-build-container div {
+        width: 100%;
+        max-width: 220px;
+        padding: 15px 10px;
+        background: none;
+        text-align: center;
+        border-radius: 20px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.2s ease;
+      }
+      #favorites-container div:hover,
+      #dev-build-container div:hover {
+        transform: scale(1.03);
+      }
+
+      /* Card images — mirrors #container div img */
+      #favorites-container div img,
+      #dev-build-container div img {
+        width: 120px;
+        height: 120px;
+        display: block;
+        border-radius: 14px;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+      }
+      #favorites-container div img:hover,
+      #dev-build-container div img:hover {
+        transform: scale(1.05);
+      }
+
+      /* Card text — mirrors #container div h3 / p */
+      #favorites-container div h3,
+      #favorites-container div p,
+      #dev-build-container div h3,
+      #dev-build-container div p {
+        color: var(--url-color);
+        font-family: monospace;
+        font-size: 0.9rem;
+        transition: color 0.3s, text-decoration 0.3s;
+      }
+      #favorites-container div h3:hover,
+      #favorites-container div p:hover,
+      #dev-build-container div h3:hover,
+      #dev-build-container div p:hover {
+        color: var(--accent-color);
+        text-decoration: underline;
+      }
+    `;
+    document.head.appendChild(s);
+  })();
+
+  (function injectAssetActionStyles() {
+    if (document.getElementById("__ws_asset_actions__")) return;
+
+    if (!document.querySelector("link[href*='font-awesome']")) {
+      const fa = document.createElement("link");
+      fa.rel  = "stylesheet";
+      fa.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css";
+      document.head.appendChild(fa);
+    }
+
+    const s = document.createElement("style");
+    s.id = "__ws_asset_actions__";
+    s.textContent = `
+      .card-actions {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 2px;
+        margin-top: 4px;
+        padding: 0 2px;
+        line-height: 1;
+        width: 100%;
+      }
+      .favorite-star {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px 3px;
+        font-size: 16px;
+        line-height: 1;
+        color: inherit;
+        flex-shrink: 0;
+        transition: transform 0.15s ease;
+      }
+      .asset-download-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px 3px;
+        font-size: 14px;
+        line-height: 1;
+        color: inherit;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        transition: transform 0.15s ease;
+      }
+      .asset-download-btn .fa { pointer-events: none; }
+      .asset-action-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px 3px;
+        font-size: 14px;
+        line-height: 1;
+        color: var(--trench-color, #000) !important;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        transition: transform 0.15s ease;
+      }
+      .asset-action-btn i { pointer-events: none; }
+
+      /* The trench (the row of buttons under each card) sits right on the
+         theme's background: a thin dark outline keeps the theme's
+         --trench-color readable over light and busy patches alike. */
+      .card-actions .favorite-star,
+      .card-actions .asset-download-btn,
+      .card-actions .asset-action-btn {
+        filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.7));
+      }
+
+      /* Each button grows on its own hover — the card itself no longer
+         scales while the cursor is anywhere over this row (see main.css). */
+      .card-actions .favorite-star:hover,
+      .card-actions .asset-download-btn:hover,
+      .card-actions .asset-action-btn:hover {
+        transform: scale(1.3);
+      }
+
+      /* Description card: slides in from the left, styled like the daily
+         picks pop-up (accent border, offset accent shadow, slight tilt). */
+      .description-panel {
+        position: fixed;
+        left: -380px;
+        top: 85%;
+        transform: translateY(-50%) rotate(-1.5deg);
+        width: 320px;
+        max-width: calc(100vw - 40px);
+        transition: left .4s cubic-bezier(.3, 1.4, .5, 1);
+        z-index: 999999;
+        pointer-events: none;
+        padding: 14px 16px 16px;
+        border-radius: 20px 16px 22px 14px;
+        border: 3px solid var(--accent-color, #f44);
+        background: var(--aside-bg, rgba(0,0,0,0.92));
+        box-shadow: 7px 7px 0 var(--accent-color, #f44);
+        color: var(--url-color, #fff);
+      }
+      .description-panel.desc-visible {
+        left: 20px;
+        pointer-events: all;
+      }
+      .description-panel :not(i) { font-family: monospace; }
+      .description-panel .desc-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 2px dashed rgba(255,255,255,0.2);
+      }
+      .description-panel .desc-head img {
+        flex: none;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        border: 2px solid var(--accent-color, #f44);
+        object-fit: cover;
+        background: rgba(0,0,0,0.4);
+        transform: rotate(-6deg);
+        box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+      }
+      .description-panel .desc-title {
+        display: block;
+        font-weight: bold;
+        font-size: 14px;
+        line-height: 1.25;
+        text-shadow: 2px 2px 0 var(--accent-color, #f44);
+        overflow-wrap: anywhere;
+      }
+      .description-panel .desc-author { display: block; margin-top: 3px; font-size: 11px; opacity: 0.7; }
+      .description-panel .alert-text {
+        text-align: left;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.55;
+        font-size: 13px;
+        max-height: 40vh;
+        overflow-y: auto;
+      }
+      .description-panel .alert-text.is-empty { opacity: 0.65; font-style: italic; }
+      @media (prefers-reduced-motion: reduce) {
+        .description-panel { transition: none; }
+      }
+    `;
+    document.head.appendChild(s);
+  })();
+
+  // Styled hover labels for the header, the ☰ menu, the footer and each
+  // card's button row (the "trench"): an element's title shows in a black
+  // bubble pointing at it (.ws-tip in main.css), above it or below it when
+  // there's no room above. While shown, the title is parked in data-tip so
+  // the browser's own plain tooltip stays away, then put back on the way
+  // out (other code finds elements by their title, e.g. the tour's
+  // [title='Coming soon']). A title changed by a click (☆, favorites
+  // toggle) is picked up on the spot. Keyboard focus shows it too.
+  (function initTrenchTips() {
+    const SEL  = ["#topBar", "#dashboardMenu", "footer", ".card-actions"]
+      .map((scope) => `${scope} [title], ${scope} [data-tip]`).join(", ");
+    const GAP  = 10;   // bubble ↔ button
+    const EDGE = 8;    // bubble ↔ screen edge
+    let tip = null, current = null;
+
+    const ensureTip = () => {
+      if (tip) return tip;
+      tip = document.createElement("div");
+      tip.className = "ws-tip";
+      tip.id = "wsTip";
+      tip.setAttribute("role", "tooltip");
+      document.body.appendChild(tip);
+      return tip;
+    };
+
+    // Parks the title (a fresh one wins over an older parked copy).
+    const tipText = (el) => {
+      const t = el.getAttribute("title");
+      if (t) {
+        el.dataset.tip = t;
+        el.removeAttribute("title");
+      }
+      return el.dataset.tip || "";
+    };
+    const restoreTitle = (el) => {
+      if (el && el.dataset.tip && !el.hasAttribute("title")) el.setAttribute("title", el.dataset.tip);
+    };
+
+    function place(el) {
+      const text = tipText(el);
+      if (!text || !el.isConnected) { hide(); return; }
+      const t = ensureTip();
+      t.textContent = text;
+      t.style.left = "0px";
+      t.style.top  = "0px";
+      const r  = el.getBoundingClientRect();
+      const w  = t.offsetWidth, h = t.offsetHeight;
+      const vw = document.documentElement.clientWidth;
+      const cx = r.left + r.width / 2;
+      const left  = Math.max(EDGE, Math.min(cx - w / 2, vw - w - EDGE));
+      const above = r.top - h - GAP >= EDGE;
+      t.dataset.side = above ? "top" : "bottom";
+      t.style.left = `${left}px`;
+      t.style.top  = `${above ? r.top - h - GAP : r.bottom + GAP}px`;
+      t.style.setProperty("--arrow-x", `${Math.max(10, Math.min(cx - left, w - 10))}px`);
+      el.setAttribute("aria-describedby", "wsTip");
+      requestAnimationFrame(() => t.classList.add("is-shown"));
+    }
+
+    function show(el) {
+      if (current && current !== el) {
+        current.removeAttribute("aria-describedby");
+        restoreTitle(current);
+      }
+      current = el;
+      tip?.classList.remove("is-shown");
+      place(el);
+    }
+
+    function hide() {
+      if (current) {
+        current.removeAttribute("aria-describedby");
+        restoreTitle(current);
+      }
+      current = null;
+      tip?.classList.remove("is-shown");
+    }
+
+    document.addEventListener("mouseover", (e) => {
+      const el = e.target.closest?.(SEL);
+      if (el === current) return;
+      if (el) show(el); else if (current) hide();
+    });
+    document.addEventListener("mouseout", (e) => { if (!e.relatedTarget) hide(); });
+    document.addEventListener("focusin", (e) => {
+      const el = e.target.closest?.(SEL);
+      if (el) show(el);
+    });
+    document.addEventListener("focusout", (e) => { if (e.target === current) hide(); });
+    // A click can change the label (☆ add/remove): re-read it once the
+    // click's handlers have run.
+    document.addEventListener("click", (e) => {
+      if (!current || !current.contains(e.target)) return;
+      setTimeout(() => { if (current) place(current); }, 0);
+    });
+    window.addEventListener("scroll", hide, { passive: true, capture: true });
+    window.addEventListener("blur", hide);
+  })();
+
+  (function injectAltContainerCSS() {
+    if (document.getElementById("__ws_alt_containers__")) return;
+    const s = document.createElement("style");
+    s.id = "__ws_alt_containers__";
+    s.textContent = `
+      /* ── Grid layout (mirrors #container) ── */
+      #favorites-container,
+      #dev-build-container {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        justify-items: center;
+        gap: 15px;
+        padding: 20px;
+        background: transparent;
+        flex-grow: 1;
+        min-height: 0;
+        align-content: start;
+      }
+
+      @media (max-width: 800px) {
+        #favorites-container,
+        #dev-build-container {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      /* ── Card box (mirrors #container div) ── */
+      #favorites-container div,
+      #dev-build-container div {
+        width: 100%;
+        max-width: 220px;
+        padding: 15px 10px;
+        background: none;
+        text-align: center;
+        border-radius: 20px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.2s ease;
+      }
+
+      #favorites-container div:hover,
+      #dev-build-container div:hover {
+        transform: scale(1.03);
+      }
+
+      /* ── Card images ── */
+      #favorites-container div img,
+      #dev-build-container div img {
+        width: 120px;
+        height: 120px;
+        display: block;
+        border-radius: 14px;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+      }
+
+      #favorites-container div img:hover,
+      #dev-build-container div img:hover {
+        transform: scale(1.05);
+      }
+
+      /* ── Card text ── */
+      #favorites-container div h3,
+      #favorites-container div p,
+      #dev-build-container div h3,
+      #dev-build-container div p {
+        color: var(--url-color);
+        font-family: monospace;
+        font-size: 0.9rem;
+        transition: color 0.3s, text-decoration 0.3s;
+      }
+
+      #favorites-container div h3:hover,
+      #favorites-container div p:hover,
+      #dev-build-container div h3:hover,
+      #dev-build-container div p:hover {
+        color: var(--accent-color);
+        text-decoration: underline;
+      }
+
+      /* ── version-pending pointer block ── */
+      #favorites-container.version-pending,
+      #dev-build-container.version-pending {
+        pointer-events: none;
+      }
+
+      /* ── Hide container while the loader GIF is active ── */
+      body.ws-loading #favorites-container,
+      body.ws-loading #dev-build-container {
+        visibility: hidden;
+        height: 0;
+        min-height: 0;
+        overflow: hidden;
+        padding: 0;
+        gap: 0;
+      }
+    `;
+    document.head.appendChild(s);
+  })();
+
+  // Grid order for a set of cards (paging.js); page, then sheet row order,
+  // if paging.js isn't on the page.
+  const orderCards = (cards) => window.WS_Paging
+    ? window.WS_Paging.orderCards(cards)
+    : cards.slice().sort((a, b) => a._page - b._page || a._idx - b._idx);
+
+  // _cardIndex: view page → its cards. The view page is the sheet page,
+  // except for paged A–Z across pages, where paging.js deals the A–Z order
+  // back into the pages.
+  function indexCardPages(cards) {
+    if (window.WS_Paging) window.WS_Paging.assignViewPages(cards);
+    else for (const c of cards) c._viewPage = c._page;
+    window._cardIndex = new Map();
+    for (const c of cards) {
+      if (!window._cardIndex.has(c._viewPage)) window._cardIndex.set(c._viewPage, []);
+      window._cardIndex.get(c._viewPage).push(c);
+    }
+  }
+
+  function createAssetCards(data) {
+    const { container } = dom || {};
+    if (!container) return [];
+
+    container.innerHTML = "";
+    // Bug-report menus live on document.body (to escape #container's
+    // overflow:hidden), so clearing #container above doesn't remove the
+    // previous render's copies — do that here instead.
+    document.querySelectorAll(".asset-bug-menu, .description-panel").forEach((el) => el.remove());
+    window._openBugMenu = null;
+    const imagePromises = [];
+    const frag          = document.createDocumentFragment();
+    const activePage    = +window.currentPage || +sessionStorage.getItem("currentPage") || 1;
+
+    const isDevPage = window._containerMode === "dev";
+
+    // Rebuilt from scratch every render (refreshCards re-renders too), so
+    // the previous render's cards don't linger in the index.
+    window._cardIndex = new Map();
+    window._allCards  = [];
+
+    // Cards are built in sheet order; their grid order (sheet / A–Z, per
+    // page or across everything) comes from WS_Paging.orderCards below.
+    const domOrdered = (Array.isArray(data) ? data : []).filter((asset) => {
+      const m = getAssetMeta(asset);
+      return !m.hidden && !m.earlyAccess;
+    });
+    const builtCards = [];
+
+    const badgeMap = {
+      featured: "https://raw.githubusercontent.com/01110010-00110101/01110010-00110101.github.io/main/system/images/featured-cover.png",
+      new:      "https://raw.githubusercontent.com/01110010-00110101/01110010-00110101.github.io/main/system/images/new-cover.png",
+      fixed:    "https://raw.githubusercontent.com/01110010-00110101/01110010-00110101.github.io/main/system/images/fixed-cover.png",
+      fix:      "https://raw.githubusercontent.com/01110010-00110101/01110010-00110101.github.io/main/system/images/fixing.png",
+    };
+
+    const BUG_REASONS = ["Blocked", "404/Missing", "Missing Icon", "Buffer/Loading Error"];
+    const BUG_ICONS = {
+      "Blocked":              "fa-ban",
+      "404/Missing":          "fa-link-slash",
+      "Missing Icon":         "fa-image",
+      "Buffer/Loading Error": "fa-hourglass-half",
+    };
+    const PADLET_URL  = "https://padlet.com/ankomstudios/breakout-room/x1rD2JLb7VXPv0dM-B8nYzL821Wo3zV4L";
+
+    const addOverlay = (wrapper, src, alt, cls, fullCover = false) => {
+      const o = document.createElement("img");
+      o.src = src; o.alt = alt; o.className = `status-overlay ${cls}`;
+      Object.assign(o.style, {
+        position: "absolute", top: "0", left: "0",
+        width: "100%", height: "100%", objectFit: "cover",
+        pointerEvents: "none", zIndex: fullCover ? "10" : "5",
+      });
+      wrapper.appendChild(o);
+    };
+
+    if (!window._bugMenuGlobalHandlerBound) {
+      window._bugMenuGlobalHandlerBound = true;
+      document.addEventListener("click", (e) => {
+        const openMenu = window._openBugMenu;
+        if (!openMenu) return;
+        if (openMenu.contains(e.target) || e.target.closest(".asset-bug-btn") === openMenu._bugBtn) return;
+        openMenu.style.display = "none";
+        openMenu.setAttribute("aria-hidden", "true");
+        if (openMenu._bugBtn) openMenu._bugBtn.setAttribute("aria-expanded", "false");
+        window._openBugMenu = null;
+      });
+    }
+
+    if (!window._bugReportModalBuilt) {
+      window._bugReportModalBuilt = true;
+
+      const BUG_REPORT_TERMS = {
+        "Blocked": [
+          "I understand “Blocked” means the asset refuses to load or shows an access-denied message.",
+          "I've confirmed this happens on a fresh page reload, not just once.",
+          "I'm not filing this to grief, spam, or troll the report queue.",
+        ],
+        "404/Missing": [
+          "I confirm the linked page or file returns a 404 or otherwise can't be found.",
+          "I've waited for the page to load and this isn't just a slow connection.",
+          "I'm not filing this to grief, spam, or troll the report queue.",
+        ],
+        "Missing Icon": [
+          "I confirm the card's icon/thumbnail is blank or broken, not just still loading.",
+          "I've reloaded the page and the icon is still missing.",
+          "I'm not filing this to grief, spam, or troll the report queue.",
+        ],
+        "Buffer/Loading Error": [
+          "I confirm the asset gets stuck buffering/loading and never finishes.",
+          "I've waited a reasonable amount of time and tried reloading.",
+          "I'm not filing this to grief, spam, or troll the report queue.",
+        ],
+      };
+
+      const overlay = document.createElement("div");
+      overlay.className = "bug-report-overlay";
+
+      const modal = document.createElement("div");
+      modal.className = "bug-report-modal";
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+      modal.setAttribute("aria-labelledby", "bugReportQuestion");
+      modal.innerHTML = `
+        <button type="button" class="bug-report-close" id="bugReportClose" aria-label="Close">✕</button>
+        <img id="bugReportImg" alt="" />
+        <h3 id="bugReportTitle"></h3>
+        <p class="bug-report-author" id="bugReportAuthor"></p>
+        <p class="bug-report-question" id="bugReportQuestion"></p>
+        <ul class="bug-report-terms" id="bugReportTerms"></ul>
+        <div class="bug-report-throbber" id="bugReportThrobber">
+          <span class="bug-report-spinner"></span>
+          <span>Submitting report&hellip;</span>
+        </div>
+        <div class="bug-report-actions" id="bugReportActions">
+          <button type="button" id="bugReportDiscard">Discard</button>
+          <button type="button" id="bugReportAgree" class="bug-report-agree">Agree to terms</button>
+        </div>
+      `;
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      const imgEl      = modal.querySelector("#bugReportImg");
+      const titleEl2   = modal.querySelector("#bugReportTitle");
+      const authorEl2  = modal.querySelector("#bugReportAuthor");
+      const questionEl = modal.querySelector("#bugReportQuestion");
+      const termsEl    = modal.querySelector("#bugReportTerms");
+      const throbberEl = modal.querySelector("#bugReportThrobber");
+      const actionsEl  = modal.querySelector("#bugReportActions");
+      const discardBtn = modal.querySelector("#bugReportDiscard");
+      const agreeBtn   = modal.querySelector("#bugReportAgree");
+
+      const resetModalUI = () => {
+        modal.classList.remove("closing");
+        throbberEl.classList.remove("visible");
+        actionsEl.style.display = "flex";
+        discardBtn.disabled = false;
+        agreeBtn.disabled   = false;
+      };
+
+      const closeModal = () => {
+        overlay.classList.remove("visible");
+        setTimeout(() => { overlay.style.display = "none"; resetModalUI(); }, 250);
+      };
+
+      // Closable (backdrop, ✕, Discard, Esc) until a report is submitting.
+      const canClose = () => !discardBtn.disabled;
+      overlay.addEventListener("click", (e) => { if (e.target === overlay && canClose()) closeModal(); });
+      discardBtn.addEventListener("click", closeModal);
+      modal.querySelector("#bugReportClose").addEventListener("click", () => { if (canClose()) closeModal(); });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && overlay.classList.contains("visible") && canClose()) {
+          e.preventDefault(); e.stopPropagation();
+          closeModal();
+        }
+      }, true);
+
+      agreeBtn.addEventListener("click", () => {
+        discardBtn.disabled = true;
+        agreeBtn.disabled   = true;
+        throbberEl.classList.add("visible");
+
+        // Placeholder: no report is actually sent/logged yet, pending the
+        // Apps Script report-collection endpoint. Just simulate a submit
+        // delay, then play the dismiss animation.
+        setTimeout(() => {
+          modal.classList.add("closing");
+          overlay.classList.remove("visible");
+          setTimeout(() => { overlay.style.display = "none"; resetModalUI(); }, 400);
+        }, 1200);
+      });
+
+      window._openBugReportModal = ({ title, author, image, reason }) => {
+        imgEl.src              = image || "";
+        imgEl.alt              = title || "";
+        titleEl2.textContent   = title || "Untitled";
+        authorEl2.textContent  = author || "";
+        questionEl.textContent = `Report "${title || "this asset"}" for ${reason}?`;
+
+        termsEl.innerHTML = "";
+        (BUG_REPORT_TERMS[reason] || []).forEach((term) => {
+          const li = document.createElement("li");
+          li.textContent = term;
+          termsEl.appendChild(li);
+        });
+
+        resetModalUI();
+        overlay.style.display = "flex";
+        requestAnimationFrame(() => overlay.classList.add("visible"));
+        agreeBtn.focus({ preventScroll: true });
+      };
+    }
+
+    for (const asset of domOrdered) {
+      // All parsing already happened in prepareAssets(); read-only from here
+      // on (statusSet/typeSet are shared with the meta cache, never mutate).
+      const m          = getAssetMeta(asset);
+      const title      = m.title;
+      const author     = m.author;
+      const imageSrc   = m.image;
+      const link       = m.link;
+      const statusSet  = m.statusSet;
+      const typeSet    = m.typeSet;
+
+      const pageNum    = m.page;
+      const isActivePage = pageNum === activePage;
+      const favKey     = m.titleLC;
+
+      const card = document.createElement("div");
+      card.className = "asset-card" + (window.WS_Favorites?.has(favKey) ? " ws-favorited" : "");
+      card._favKey = favKey;
+      // Sort keys for WS_Paging.orderCards (paging.js).
+      card._page  = pageNum;
+      card._idx   = builtCards.length;
+      card._title = title;
+
+      card.style.display = "none";
+      Object.assign(card.dataset, {
+        title:       m.titleLC,
+        author:      m.authorLC,
+        page:        String(pageNum),
+        filtered:    "true",
+        category:    m.category,
+        subcategory: m.subcategory,
+      });
+      // Pre-joined search haystack — filterAssets reads this per keystroke
+      // instead of rebuilding it from two dataset lookups per card.
+      card._hay = m.titleLC + " " + m.authorLC;
+
+      const a   = document.createElement("a");
+      a.href    = link;
+      a.className = "asset-link";
+      a.title   = `Click to open "${title || "this asset"}" in a new tab!`;
+
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        openAsset(link);
+      });
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "asset-img-wrapper";
+      Object.assign(wrapper.style, { position: "relative", display: "inline-block", borderRadius: "14px" });
+
+      const img = document.createElement("img");
+      img.alt           = title;
+      img.className     = "asset-img";
+      img.fetchPriority = isActivePage ? "high" : "auto";
+
+      const imgPromise = new Promise((resolve) => {
+        // Three tiers: the real hosted image, then a local .../<name>/icon.png
+        // guess (useful while icons are still being imported port-by-port and
+        // most don't have a hosted icon.png yet), then the generic placeholder.
+        // Any tier past the primary asset.image counts as "fallback active" —
+        // flag it visually (image only, per the red-glow ask) so it's obvious
+        // at a glance which cards still need a real hosted icon.png.
+        const hasRealImage  = !!m.imageTrim;
+        const localFallback = localIconFallback(link);
+        const onLoad        = () => resolve();
+        const markFallback  = () => img.classList.add("img-fallback");
+
+        const tryFinal = () => {
+          markFallback();
+          img.onload  = onLoad;
+          img.onerror = resolve;
+          img.src = config.fallbackImage;
+        };
+
+        const tryLocal = () => {
+          markFallback();
+          if (localFallback) {
+            img.onload  = onLoad;
+            img.onerror = tryFinal;
+            img.src = localFallback;
+          } else {
+            tryFinal();
+          }
+        };
+
+        if (!hasRealImage) {
+          tryLocal();
+        } else {
+          img.onload  = onLoad;
+          img.onerror = tryLocal;
+          img.src = imageSrc;
+        }
+
+        // A host that stalls (neither loads nor errors) would hold up the
+        // whole page's loader, and the tour waiting on it, for minutes. The
+        // card counts as ready after IMG_WAIT_MS; the image still arrives
+        // whenever it does.
+        setTimeout(resolve, IMG_WAIT_MS);
+      });
+      imagePromises.push({ promise: imgPromise, page: pageNum, card });
+      wrapper.appendChild(img);
+
+      if (typeSet.has("featured")) addOverlay(wrapper, badgeMap.featured, "featured badge", "overlay-featured");
+      if (typeSet.has("new"))      addOverlay(wrapper, badgeMap.new,      "new badge",      "overlay-new");
+      if (typeSet.has("fixed"))    addOverlay(wrapper, badgeMap.fixed,    "fixed badge",    "overlay-fixed");
+
+      if (typeSet.has("grail")) {
+        const grailEl = document.createElement("img");
+        grailEl.src = "assets/media/images/type-overlayStyles/grail.png";
+        grailEl.alt = "";
+        grailEl.className = "grail-bg";
+        wrapper.insertBefore(grailEl, wrapper.firstChild);
+        wrapper.classList.add("has-grail");
+      }
+
+      if (typeSet.has("disco"))     img.classList.add("img-disco");
+      if (typeSet.has("shiny"))     wrapper.classList.add("img-shiny");
+      if (typeSet.has("pixelated")) img.style.imageRendering = "pixelated";
+      if (typeSet.has("cover")) {
+
+        Object.assign(wrapper.style, {
+          overflow: "hidden",
+          maxHeight: "250px",
+          height:    "250px",
+          width:     "100%",
+          display:   "block",
+        });
+        Object.assign(img.style, {
+          width:      "100%",
+          height:     "var(--asset-img-size, 120px)",
+          objectFit:  "cover",
+
+          objectPosition: "center top",
+          display:    "block",
+        });
+      }
+
+      if (statusSet.has("fix"))  { addOverlay(wrapper, badgeMap.fix, "fixing overlay", "overlay-fix", true); card.classList.add("fix"); }
+      if (statusSet.has("soon"))   card.classList.add("soon");
+      if (statusSet.has("cooked")) {
+        const isDmca    = typeSet.has("dmca") || statusSet.has("dmca");
+        const isBlocked = typeSet.has("blocked") || statusSet.has("blocked");
+        if (isDmca || isBlocked) {
+          img.src = "assets/media/images/placeholders/cooked.png";
+          img.style.imageRendering = "pixelated";
+        }
+        card.classList.add("cooked");
+      }
+
+      const animatedSrc = m.animated;
+      const animatedSwapAllowed = typeof window.WS_Grid?.animatedSwapEnabled === "function"
+        ? window.WS_Grid.animatedSwapEnabled()
+        : true;
+      if (typeSet.has("animated") && animatedSrc && animatedSwapAllowed) {
+        const isVideo = /\.(mp4|webm|ogg)([?]|$)/i.test(animatedSrc);
+        let animEl = null, animTimeout = null, isAnimating = false;
+
+        // Stops itself once the card has been removed by a re-render — no
+        // per-card MutationObserver watching the whole document any more.
+        const scheduleNext = () => {
+          // Still being built (not in the grid yet) counts as alive; only a
+          // card a later render dropped from _allCards stops here.
+          if (!card.isConnected && card.parentNode !== frag && !window._allCards.includes(card)) return;
+          animTimeout = setTimeout(playAnim, (3 + Math.random() * 57) * 1000);
+        };
+        const playAnim = () => {
+          if (!card.isConnected) { animEl?.remove(); return; }
+          if (isAnimating) return;
+          isAnimating = true;
+          animEl = document.createElement(isVideo ? "video" : "img");
+          animEl.src = animatedSrc;
+          if (isVideo) Object.assign(animEl, { autoplay: true, muted: true, loop: false, playsInline: true });
+          animEl.className = "animated-swap";
+          wrapper.insertBefore(animEl, wrapper.firstChild);
+          setTimeout(() => { animEl?.remove(); animEl = null; isAnimating = false; scheduleNext(); },
+            (3 + Math.random() * 5) * 1000);
+        };
+
+        if (img.complete && img.naturalWidth) scheduleNext();
+        else img.addEventListener("load", scheduleNext, { once: true });
+      }
+
+      a.appendChild(wrapper);
+      const titleEl  = document.createElement("h3"); titleEl.textContent  = title  || "Untitled";
+      const authorEl = document.createElement("p");  authorEl.textContent = author || "";
+
+      titleEl.title = "Shift+click to copy title";
+      titleEl.addEventListener("click", (e) => {
+        if (!e.shiftKey) return;
+        e.preventDefault(); e.stopPropagation();
+        const text = title || "Untitled";
+        navigator.clipboard?.writeText(text).then(() => {
+          const original = titleEl.textContent;
+          titleEl.textContent = "Copied!";
+          setTimeout(() => { titleEl.textContent = original; }, 900);
+        }).catch((err) => console.warn("[title-copy] clipboard write failed:", err));
+      });
+
+      if (statusSet.has("cooked")) {
+        const isDmca    = typeSet.has("dmca") || statusSet.has("dmca");
+        const isBlocked = typeSet.has("blocked") || statusSet.has("blocked");
+        if (isDmca || isBlocked) {
+          a.title              = isDmca ? "DMCA Takedown — unavailable" : "Blocked — unavailable";
+          authorEl.textContent = isDmca ? "DMCA TAKEDOWN" : "BLOCKED D:";
+        }
+      }
+
+      const star = document.createElement("button");
+      star.className = "favorite-star";
+      star.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:16px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      const paintStar = (on) => {
+        star.innerHTML = `<i class="${on ? "fa-solid" : "fa-regular"} fa-star" aria-hidden="true"></i>`;
+        star.title = on ? "Remove from favorites" : "Add to favorites";
+        star.setAttribute("aria-pressed", String(on));
+      };
+      paintStar(window.WS_Favorites?.has(favKey));
+      star.addEventListener("click", (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const on = window.WS_Favorites.toggle(favKey);
+        paintStar(on);
+        card.classList.toggle("ws-favorited", on);
+        // In the favorites view this re-flows the favorites pages (an
+        // unfavorited card drops out); in the main view nothing moves.
+        if (window.WS_Favorites.viewOn) window.filterAssets?.(dom.searchInput?.value || "");
+      });
+
+      const dlBtn = document.createElement("button");
+      dlBtn.className = "asset-download-btn";
+      dlBtn.title     = `Download "${title || "asset"}" as HTML`;
+      dlBtn.innerHTML = `<i class="fa-solid fa-download" aria-hidden="true"></i>`;
+      dlBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      dlBtn.addEventListener("click", async (e) => {
+        e.preventDefault(); e.stopPropagation();
+        try {
+          const assetTitle = title    || "Untitled";
+          const assetUrl   = link     || "";
+          const assetFav   = imageSrc || "";
+
+          let favIconBase64 = "";
+          try {
+            const imgRes  = await fetch(assetFav, { mode: "cors" });
+            const imgBlob = await imgRes.blob();
+            favIconBase64 = await new Promise((res) => {
+              const reader  = new FileReader();
+              reader.onload = () => res(reader.result);
+              reader.readAsDataURL(imgBlob);
+            });
+          } catch (_) {  }
+
+          const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${assetTitle}</title>
+  <link rel="icon" type="image/png" href="${favIconBase64}" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    embed {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <embed id="frame" src="${assetUrl}" />
+</body>
+</html>`;
+
+          const safeFilename = assetTitle.replace(/[^a-z0-9_\-\. ]/gi, "_").trim() || "asset";
+          const blob   = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+          const blobUrl = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href     = blobUrl;
+          anchor.download = `${safeFilename}.html`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        } catch (err) {
+          console.error("[asset-download] failed:", err);
+        }
+      });
+
+      const descText = m.description;
+      const descMsg  = descText || `No description available for "${title || "this asset"}".`;
+
+      const descBtn = document.createElement("button");
+      descBtn.className = "asset-action-btn asset-desc-btn";
+      descBtn.innerHTML = `<i class="fa-solid fa-circle-question" aria-hidden="true"></i>`;
+      descBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      descBtn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+
+      // Panel is only built the first time someone hovers the button, so a
+      // full render no longer appends one hidden <div> to <body> per asset.
+      let descPanel = null;
+      const ensureDescPanel = () => {
+        if (descPanel) return descPanel;
+        descPanel = document.createElement("div");
+        descPanel.className = "description-panel";
+        descPanel.setAttribute("role", "tooltip");
+        descPanel.innerHTML = `
+          <div class="desc-head">
+            <img alt="" />
+            <div><span class="desc-title"></span><span class="desc-author"></span></div>
+          </div>
+          <div class="alert-text"></div>`;
+        const headImg = descPanel.querySelector(".desc-head img");
+        headImg.src = imageSrc || config.fallbackImage;
+        headImg.onerror = () => { headImg.onerror = null; headImg.src = config.fallbackImage; };
+        descPanel.querySelector(".desc-title").textContent = title || "Untitled";
+        const authorLine = descPanel.querySelector(".desc-author");
+        if (author) authorLine.textContent = author; else authorLine.remove();
+        const descAlertText = descPanel.querySelector(".alert-text");
+        descAlertText.textContent = descMsg;
+        descAlertText.classList.toggle("is-empty", !descText);
+        descPanel.addEventListener("mouseleave", () => descPanel.classList.remove("desc-visible"));
+        document.body.appendChild(descPanel);
+        return descPanel;
+      };
+
+      descBtn.addEventListener("mouseenter", () => {
+        const panel = ensureDescPanel();
+        requestAnimationFrame(() => panel.classList.add("desc-visible"));
+      });
+      descBtn.addEventListener("mouseleave", () => {
+        setTimeout(() => {
+          if (descPanel && !descPanel.matches(":hover")) descPanel.classList.remove("desc-visible");
+        }, 80);
+      });
+
+      const bugBtn = document.createElement("button");
+      bugBtn.className = "asset-action-btn asset-bug-btn";
+      bugBtn.title     = `Report "${title || "this asset"}"?`;
+      bugBtn.innerHTML = `<i class="fa-solid fa-biohazard" aria-hidden="true"></i>`;
+      bugBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      bugBtn.setAttribute("aria-haspopup", "true");
+      bugBtn.setAttribute("aria-expanded", "false");
+
+      // Appended to document.body (not nested under #container), so
+      // #container div's overflow:hidden and higher-specificity display/
+      // width/padding reset never touch it. Built lazily on first open —
+      // most cards never have their bug menu opened at all.
+      let bugMenu = null;
+
+      const closeBugMenu = () => {
+        if (!bugMenu) return;
+        bugMenu.style.display = "none";
+        bugMenu.setAttribute("aria-hidden", "true");
+        bugBtn.setAttribute("aria-expanded", "false");
+        if (window._openBugMenu === bugMenu) window._openBugMenu = null;
+      };
+
+      const ensureBugMenu = () => {
+        if (bugMenu) return bugMenu;
+        bugMenu = document.createElement("div");
+        bugMenu.className = "asset-bug-menu";
+        bugMenu.setAttribute("aria-hidden", "true");
+        bugMenu._bugBtn = bugBtn;
+
+        const head = document.createElement("p");
+        head.className = "asset-bug-head";
+        head.textContent = "Report a problem";
+        bugMenu.appendChild(head);
+
+        for (const reason of BUG_REASONS) {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.innerHTML = `<i class="fa-solid ${BUG_ICONS[reason] || "fa-flag"}" aria-hidden="true"></i><span></span>`;
+          item.querySelector("span").textContent = reason;
+          item.addEventListener("click", (e) => {
+            e.preventDefault(); e.stopPropagation();
+            closeBugMenu();
+            window._openBugReportModal?.({ title, author, image: imageSrc, reason });
+          });
+          bugMenu.appendChild(item);
+        }
+
+        const elseItem = document.createElement("button");
+        elseItem.type = "button";
+        elseItem.className = "asset-bug-else";
+        elseItem.innerHTML = `<i class="fa-solid fa-comment-dots" aria-hidden="true"></i><span>Something else</span>`;
+        elseItem.title = "Opens our report board in a new tab";
+        elseItem.addEventListener("click", (e) => {
+          e.preventDefault(); e.stopPropagation();
+          window.open(PADLET_URL, "_blank");
+          closeBugMenu();
+        });
+        bugMenu.appendChild(elseItem);
+
+        document.body.appendChild(bugMenu);
+        return bugMenu;
+      };
+
+      bugBtn.addEventListener("click", (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const menu   = ensureBugMenu();
+        const isOpen = menu.style.display === "flex";
+        if (window._openBugMenu && window._openBugMenu !== menu) {
+          window._openBugMenu.style.display = "none";
+          window._openBugMenu.setAttribute("aria-hidden", "true");
+          if (window._openBugMenu._bugBtn) window._openBugMenu._bugBtn.setAttribute("aria-expanded", "false");
+        }
+        if (isOpen) {
+          closeBugMenu();
+        } else {
+          menu.style.display = "flex";
+          const rect = bugBtn.getBoundingClientRect();
+          const menuWidth = menu.offsetWidth || 190;
+          const maxLeft = window.scrollX + document.documentElement.clientWidth - menuWidth - 8;
+          const left = Math.max(8, Math.min(rect.left + window.scrollX, maxLeft));
+          menu.style.left = `${left}px`;
+          menu.style.top  = `${rect.bottom + window.scrollY + 6}px`;
+          menu.setAttribute("aria-hidden", "false");
+          bugBtn.setAttribute("aria-expanded", "true");
+          window._openBugMenu = menu;
+        }
+      });
+
+      const actionsRow = document.createElement("div");
+      actionsRow.className = "card-actions";
+      actionsRow.style.cssText = "display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:2px!important;width:100%!important;";
+      actionsRow.appendChild(star);
+      actionsRow.appendChild(dlBtn);
+      actionsRow.appendChild(descBtn);
+      actionsRow.appendChild(bugBtn);
+
+      card.append(a, titleEl, authorEl, actionsRow);
+      builtCards.push(card);
+      window._allCards.push(card);
+    }
+
+    indexCardPages(builtCards);
+    for (const card of orderCards(builtCards)) frag.appendChild(card);
+    container.appendChild(frag);
+    if (window.WS_Grid) window.WS_Grid.refresh();
+
+    if (!window._pageLoadState) window._pageLoadState = new Map();
+
+    const pagePromiseMap = new Map();
+    for (const { promise, page, card } of imagePromises) {
+      if (!pagePromiseMap.has(page)) pagePromiseMap.set(page, { promises: [], cards: [] });
+      pagePromiseMap.get(page).promises.push(promise);
+      pagePromiseMap.get(page).cards.push(card);
+    }
+
+    for (const [pageNum, { promises, cards }] of pagePromiseMap) {
+      const isActive = pageNum === activePage;
+
+      let settled = 0;
+      const total = cards.length;
+      cards.forEach((card, i) => {
+        promises[i].finally(() => {
+          setTimeout(() => {
+            card.classList.add("ready");
+            settled++;
+            if (settled === total && typeof window.renderPage === "function") {
+              window.renderPage();
+            }
+          }, isActive ? i * 30 : i * 60);
+        });
+      });
+
+      const pageSettled = Promise.allSettled(promises).then(() => {
+        window._pageLoadState.set(pageNum, "loaded");
+
+        if (+window.currentPage === pageNum) {
+          if (isActive) {
+            runLoaderSequence();
+          } else {
+
+            _dismissPageLoader(pageNum);
+          }
+        }
+      });
+
+      if (!window._pageLoadState.has(pageNum)) {
+        window._pageLoadState.set(pageNum, pageSettled);
+      }
+
+      if (isActive) {
+        pageSettled.then(() => {});
+
+      }
+    }
+
+    if (!pagePromiseMap.has(activePage)) {
+      window._pageLoadState.set(activePage, "loaded");
+      runLoaderSequence();
+      if (typeof window.renderPage === "function") window.renderPage();
+    }
+
+    return imagePromises;
+  }
+
+  function initPaging() {
+    const { container, pageIndicator, searchInput, searchBtn } = dom || {};
+    if (!container) return;
+
+    let activeCategories = new Set();
+
+    window._cardIndex = new Map();
+    window._allCards  = [];
+
+    const getFilteredCards = () => window._allCards.filter(c => c.dataset.filtered === "true");
+    const favViewOn        = () => !!window.WS_Favorites?.viewOn;
+
+    // Favorited cards in the order they were favorited → { page, order }.
+    // Favorites for assets that are no longer in the sheet (or hidden) have
+    // no card and simply don't take up a slot. Rebuilt per render so an
+    // add/remove re-flows every favorites page.
+    const getFavLayout = () => {
+      const byKey = new Map();
+      for (const c of window._allCards) if (c._favKey) byKey.set(c._favKey, c);
+      const layout = new Map();
+      let n = 0;
+      for (const key of window.WS_Favorites?.list() || []) {
+        const c = byKey.get(key);
+        if (!c) continue;
+        layout.set(c, { page: Math.floor(n / FAV_PAGE_SIZE) + 1, order: n });
+        n++;
+      }
+      return layout;
+    };
+    const favPageCount = (layout) => Math.ceil(layout.size / FAV_PAGE_SIZE);
+
+    const getPages = () => favViewOn()
+      ? Array.from({ length: favPageCount(getFavLayout()) }, (_, i) => i + 1)
+      : [...window._cardIndex.keys()].sort((a, b) => a - b);
+
+    let errorGif = document.getElementById("noResultsGif");
+    if (!errorGif) {
+      errorGif = document.createElement("img");
+      errorGif.id        = "noResultsGif";
+
+      if (typeof applyGifToImg === "function") {
+        applyGifToImg(errorGif, _getTheme(), "searching");
+      } else {
+        errorGif.src = getThemeGifSrc(_getTheme(), "searching");
+        errorGif.dataset.gifState = "searching";
+      }
+      errorGif.draggable = false;
+      Object.assign(errorGif.style, {
+        display: "none", position: "absolute",
+        top: "50%", left: "50%", transform: "translate(-50%, 0)",
+        transformOrigin: "50% 0%", width: "128px", height: "128px",
+        opacity: "0", transition: "opacity 0.25s ease",
+        pointerEvents: "auto", cursor: "grab", zIndex: "1000",
+        imageRendering: "pixelated",
+      });
+      container.parentElement.appendChild(errorGif);
+      initGifDrag(errorGif);
+    }
+
+    const updateVisibility = (visible = getFilteredCards().length) => {
+      if (visible === 0) {
+        errorGif.style.display = "block";
+        requestAnimationFrame(() => (errorGif.style.opacity = "1"));
+      } else {
+        errorGif.style.opacity = "0";
+        setTimeout(() => { if (parseFloat(errorGif.style.opacity) === 0) errorGif.style.display = "none"; }, 250);
+      }
+    };
+
+    // Favorites view: only favorited cards, on their own pages, in the order
+    // they were added (CSS `order` — the grid's DOM order is left alone).
+    // Their sheet page is ignored, so the per-sheet-page loader gate below
+    // doesn't apply; each card still waits for its own image ("ready").
+    const renderFavPage = () => {
+      const layout = getFavLayout();
+      const pages  = favPageCount(layout) || 1;
+      const cur    = Math.min(Math.max(1, +window.currentPage || 1), pages);
+      window.currentPage = cur;
+
+      let matches = 0;
+      for (const c of window._allCards) {
+        const slot = layout.get(c);
+        const ok   = !!slot && c.dataset.filtered === "true";
+        if (ok) matches++;
+        const want = ok && slot.page === cur && c.classList.contains("ready") ? "flex" : "none";
+        if (c.style.display !== want) c.style.display = want;
+        c.style.order = slot ? String(slot.order) : "";
+      }
+
+      if (pageIndicator) pageIndicator.textContent = `Page ${cur}/${pages}`;
+      updateVisibility(matches);
+    };
+
+    // Paging settings (paging.js, set on the Settings page), with the
+    // pageless overrides already applied.
+    const paging = () => window.WS_Paging?.effective()
+      || { layout: "paged", order: "sheet", filterScope: "local", searchScope: "global", flipAlign: false };
+    const isPageless = () => !favViewOn() && paging().layout === "pageless";
+
+    // Set by filterAssets: a search or filter is narrowing the cards, and
+    // whether it's showing matches from every page at once (the page
+    // arrows do nothing then).
+    let narrowing   = false;
+    let spanningAll = false;
+
+    const paintPagingMode = () => document.body.classList.toggle("ws-pageless", isPageless());
+
+    window.renderPage = () => {
+      if (favViewOn()) { renderFavPage(); return; }
+      paintPagingMode();
+      const pages = getPages();
+
+      if (!pages.length) {
+
+        if (Array.isArray(window.assetsData)) {
+          if (pageIndicator) pageIndicator.textContent = "Page 1/1";
+          sessionStorage.setItem("currentPage", 1);
+        }
+        return;
+      }
+
+      if (!window._pageRestored) {
+        const saved = +sessionStorage.getItem("currentPage") || pages[0];
+        window.currentPage = pages.includes(saved) ? saved : pages[0];
+        window._pageRestored = true;
+      }
+
+      const cur = +window.currentPage;
+      const pageState = window._pageLoadState?.get(cur);
+      const pageFullyLoaded = pageState === "loaded";
+      // Pageless: every page's cards at once. The current page still gates
+      // the first paint, so nothing shows under the loader gif.
+      const pageless = isPageless();
+
+      let here = 0;
+      for (const [pageNum, cards] of window._cardIndex) {
+        const onThisPage = pageless || pageNum === cur;
+        for (const c of cards) {
+          const isReady = c.classList.contains("ready");
+          const match   = c.dataset.filtered === "true";
+          if (onThisPage && match) here++;
+
+          const want = onThisPage && isReady && pageFullyLoaded && match ? "flex" : "none";
+          if (c.style.display !== want) c.style.display = want;
+        }
+      }
+
+      if (pageIndicator) {
+        if (pageless) {
+          pageIndicator.textContent = narrowing ? `${here} found` : "All pages";
+        } else {
+          const idx = pages.indexOf(cur);
+          // Local search/filters: matches on this page, other pages still flip.
+          pageIndicator.textContent = `Page ${idx + 1}/${pages.length}` + (narrowing ? ` · ${here} here` : "");
+        }
+      }
+
+      if (!pageless) sessionStorage.setItem("currentPage", cur);
+      updateVisibility(here);
+    };
+
+    window.filterAssets = (q) => {
+      const query      = safeStr(q).toLowerCase().trim();
+      const words      = query.length ? query.split(/\s+/) : null;
+      const isSearching = query.length > 0;
+      const hasTags      = activeCategories.size > 0;
+      let matches        = 0;
+
+      for (const c of window._allCards) {
+        const tagOk = !hasTags
+          || activeCategories.has(c.dataset.category)
+          || activeCategories.has(c.dataset.subcategory);
+
+        if (!tagOk) { c.dataset.filtered = "false"; continue; }
+        if (!words) { c.dataset.filtered = "true"; continue; }
+        const haystack = c._hay ?? (c.dataset.title + " " + c.dataset.author);
+        let hit = haystack.includes(query);
+        if (!hit) for (const w of words) if (haystack.includes(w)) { hit = true; break; }
+        c.dataset.filtered = hit ? "true" : "false";
+      }
+
+      // Global search (the default) and global category filters ignore page
+      // boundaries and show every match at once. Local ones keep the pages:
+      // renderPage shows this page's matches and the arrows still flip.
+      // Pageless has no pages to keep, so renderPage covers it. The
+      // favorites view always searches every favorite at once.
+      const p = paging();
+      narrowing   = isSearching || hasTags;
+      spanningAll = !isPageless() && (
+        isSearching ? (favViewOn() || p.searchScope === "global")
+                    : (hasTags && !favViewOn() && p.filterScope === "global"));
+
+      if (spanningAll) {
+        const favLayout = favViewOn() ? getFavLayout() : null;
+        for (const c of window._allCards) {
+          c.classList.remove("tag-excluded");
+          const inView = !favLayout || favLayout.has(c);
+          if (inView && c.dataset.filtered === "true") matches++;
+          const show = inView && c.classList.contains("ready") && c.dataset.filtered === "true";
+          c.style.display = show ? "flex" : "none";
+        }
+        if (pageIndicator) {
+          pageIndicator.textContent = !isSearching ? "Filtering all pages…"
+            : hasTags ? "Searching within tags…" : "Searching all pages…";
+        }
+        const pagesAnchor = document.querySelector(".pages-anchor");
+        if (pagesAnchor) pagesAnchor.style.visibility = "hidden";
+        updateVisibility(matches);
+      } else {
+        for (const c of window._allCards) c.classList.remove("tag-excluded");
+        const pagesAnchor = document.querySelector(".pages-anchor");
+        if (pagesAnchor) pagesAnchor.style.visibility = "";
+        renderPage(); // also updates the no-results gif
+      }
+    };
+
+    // The per-sheet-page loader only applies to main pages; favorites pages
+    // mix cards from every sheet page (see renderFavPage).
+    // Nothing to flip while pageless or while every page's matches are up.
+    const canFlipPages = () => !window._reloading && !spanningAll && !isPageless();
+
+    // Page flip align (Settings): land at the top of the new page instead
+    // of at the same scroll position.
+    const alignAfterFlip = () => {
+      if (paging().flipAlign) window.scrollTo({ top: 0, behavior: "instant" });
+    };
+
+    window.prevPage = () => {
+      if (!canFlipPages()) return;
+      const pages = getPages();
+      const i     = pages.indexOf(+window.currentPage);
+      window.currentPage = i <= 0 ? pages[pages.length - 1] : pages[i - 1];
+      if (!favViewOn()) _handlePageNavigation(+window.currentPage);
+      renderPage();
+      alignAfterFlip();
+    };
+
+    window.nextPage = () => {
+      if (!canFlipPages()) return;
+      const pages = getPages();
+      const i     = pages.indexOf(+window.currentPage);
+      window.currentPage = i === -1 || i === pages.length - 1 ? pages[0] : pages[i + 1];
+      if (!favViewOn()) _handlePageNavigation(+window.currentPage);
+      renderPage();
+      alignAfterFlip();
+    };
+
+    // Settings changed (here or in the Settings tab): re-order the cards in
+    // place (no rebuild, no refetch) and re-apply the search/filters.
+    document.addEventListener("ws:paging-changed", () => {
+      if (!window._allCards.length) { paintPagingMode(); return; }
+      indexCardPages(window._allCards);
+      container.append(...orderCards(window._allCards));
+      filterAssets(searchInput ? searchInput.value : "");
+    });
+
+    // ── Header favorites toggle ─────────────────────────────────────────
+    // On: only favorites show, paged on their own. Off: main assets as
+    // usual. Each view remembers its own page while you flip between them.
+    // Deliberately not persisted across reloads, so the first render (and
+    // the loader it waits on) is always the main grid.
+    const favBtn = document.getElementById("fav-btn");
+    const favImg = favBtn?.querySelector("img");
+    let savedMainPage = 1;
+    let savedFavPage  = 1;
+
+    const paintFavBtn = (on) => {
+      if (!favBtn) return;
+      if (favImg) favImg.src = favImg.src.replace(/(faved|unfav)\.gif(\?.*)?$/, on ? "faved.gif" : "unfav.gif");
+      favBtn.title = on ? "Showing favorites (click for all assets)" : "Show favorites";
+      favBtn.setAttribute("aria-pressed", String(on));
+    };
+
+    favBtn?.addEventListener("click", () => {
+      if (window._reloading || !window.WS_Favorites) return;
+      const on = !favViewOn();
+      if (on) savedMainPage = +window.currentPage || 1;
+      else    savedFavPage  = +window.currentPage || 1;
+
+      window.WS_Favorites.viewOn = on;
+      window.currentPage = on ? savedFavPage : savedMainPage;
+      if (!on) for (const c of window._allCards) c.style.order = "";
+
+      paintFavBtn(on);
+      filterAssets(searchInput ? searchInput.value : "");
+    });
+    paintFavBtn(false);
+
+    function _handlePageNavigation(pageNum) {
+      const pageState = window._pageLoadState?.get(pageNum);
+      if (pageState === "loaded" || pageState === undefined) {
+
+        return;
+      }
+
+      const loader = document.getElementById("containerLoader");
+      if (!loader) {
+
+        const newLoader = document.createElement("div");
+        newLoader.id = "containerLoader";
+        const loaderImg = document.createElement("img");
+        loaderImg.alt = "";
+        applyGifToImg(loaderImg, _getTheme(), "loading");
+        newLoader.appendChild(loaderImg);
+        document.body.appendChild(newLoader);
+        window._loaderSequenceRunning = false;
+        document.body.classList.add("ws-loading");
+      } else {
+
+        const img = loader.querySelector("img");
+        if (img) applyGifToImg(img, _getTheme(), "loading");
+        window._loaderSequenceRunning = false;
+        document.body.classList.add("ws-loading");
+        loader.style.display = "";
+      }
+
+      Promise.resolve(pageState).then(() => {
+        _dismissPageLoader(pageNum);
+      });
+    }
+
+    searchInput?.addEventListener("input", debounce(() => filterAssets(searchInput.value), 200));
+    searchInput?.addEventListener("input", () => fitInputText(searchInput, searchInput.value));
+    window.addEventListener("resize", debounce(() => {
+      if (searchInput) fitInputText(searchInput, searchInput.value || searchInput.placeholder);
+    }, 150));
+
+    const devPrev = document.getElementById("devPrevBtn");
+    const devNext = document.getElementById("devNextBtn");
+    if (devPrev) devPrev.addEventListener("click", () => window.prevPage?.());
+    if (devNext) devNext.addEventListener("click", () => window.nextPage?.());
+
+    window.currentPage = +sessionStorage.getItem("currentPage") || 1;
+    renderPage();
+
+    (function initSubHeaderFilter() {
+
+      const subBtns = document.querySelectorAll(".sub-header button");
+      const dropdownBtns = [];
+
+      function toggleCategory(cat) {
+        if (!cat) return;
+        if (activeCategories.has(cat)) activeCategories.delete(cat);
+        else activeCategories.add(cat);
+
+        const allBtns = [...subBtns, ...dropdownBtns];
+        allBtns.forEach(b => b.classList.toggle("active", activeCategories.has(b.dataset.category)));
+
+        window.filterAssets(searchInput ? searchInput.value : "");
+      }
+
+      subBtns.forEach(btn => {
+        const cat = (btn.dataset.category || btn.textContent).trim().toLowerCase();
+        btn.dataset.category = cat;
+        btn.addEventListener("click", () => toggleCategory(cat));
+      });
+
+      // ---- Dynamic category/sub-category dropdown, built from the same fetched asset data ----
+      const menu    = document.getElementById("searchCategoryMenu");
+      const catList = document.getElementById("searchCategoryList");
+      const subList = document.getElementById("searchSubcategoryList");
+
+      function refreshCategoryDropdown() {
+        if (!catList || !subList) return;
+
+        dropdownBtns.length = 0;
+        catList.innerHTML = "";
+        subList.innerHTML = "";
+
+        const sourceRows = window.assetsData || [];
+
+        const cats = new Set();
+        const subs = new Set();
+        for (const a of sourceRows) {
+          const m = getAssetMeta(a);
+          if (m.categoryRaw)    cats.add(m.categoryRaw);
+          if (m.subcategoryRaw) subs.add(m.subcategoryRaw);
+        }
+
+        if (!cats.size && !subs.size && sourceRows.length) {
+          console.error(
+            "[CategoryDropdown] No category/sub-category fields matched on any asset row. " +
+            "Looked for keys like 'category'/'categories'/'cat' and 'sub-category'/'subcategory'/'subcat'. " +
+            "Actual keys on the first asset row were:",
+            Object.keys(sourceRows[0])
+          );
+        }
+
+        const buildItem = (label, list) => {
+          const el = document.createElement("button");
+          el.type = "button";
+          el.textContent = label;
+          el.dataset.category = label.toLowerCase();
+          if (activeCategories.has(el.dataset.category)) el.classList.add("active");
+          el.addEventListener("click", () => toggleCategory(el.dataset.category));
+          dropdownBtns.push(el);
+          list.appendChild(el);
+        };
+
+        if (cats.size) {
+          [...cats].sort(fastCompare).forEach(c => buildItem(c, catList));
+        } else {
+          const p = document.createElement("p");
+          p.textContent = "No categories yet";
+          catList.appendChild(p);
+        }
+
+        if (subs.size) {
+          [...subs].sort(fastCompare).forEach(s => buildItem(s, subList));
+        } else {
+          const p = document.createElement("p");
+          p.textContent = "No sub-categories yet";
+          subList.appendChild(p);
+        }
+      }
+
+      let toggleMenu = () => {};
+
+      if (menu && searchBtn) {
+        menu.style.display    = "none";
+        menu.style.opacity    = "0";
+        menu.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+
+        toggleMenu = (force) => {
+          const isVisible = menu.style.display === "block";
+          const show = force !== undefined ? force : !isVisible;
+          if (!show) {
+            menu.style.opacity = "0";
+            searchBtn.setAttribute("aria-expanded", "false");
+            menu.setAttribute("aria-hidden", "true");
+            setTimeout(() => (menu.style.display = "none"), 300);
+          } else {
+            refreshCategoryDropdown();
+            menu.style.display = "block";
+            searchBtn.setAttribute("aria-expanded", "true");
+            menu.setAttribute("aria-hidden", "false");
+            setTimeout(() => (menu.style.opacity = "1"), 10);
+          }
+        };
+
+        searchBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleMenu();
+        });
+        document.addEventListener("click", (e) => {
+          if (
+            menu.style.display === "block" &&
+            !menu.contains(e.target) &&
+            e.target !== searchBtn
+          ) toggleMenu(false);
+        });
+      }
+
+      window._refreshCategoryDropdown = refreshCategoryDropdown;
+    })();
+  }
+
+  let _searchQuotes     = null;
+  let _searchQuotesIdx  = 0;
+
+  // Served by the same QuoteSystemWS sheet as the main quote box (column A) —
+  // column B is the dedicated search-placeholder list, B1 header / B2:B... data.
+  // With the data cache on, the saved list is used and only an R refetch
+  // (ws:refetch) goes back to DATA for a fresh one.
+  async function _loadSearchQuotes(force = false) {
+    if (_searchQuotes !== null && !force) return _searchQuotes;
+    const cache = window.WS_DataCache;
+    if (!force && cache?.enabled()) {
+      const saved = await cache.read("searchquotes");
+      if (Array.isArray(saved)) return (_searchQuotes = saved);
+    }
+    try {
+      const url = `${window.config.sheetUrl}?type=searchQuotes`;
+      await ticketReady();
+      const res = await fetch(bustCache(url), { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const values = data && typeof data === "object" && !Array.isArray(data)
+        ? Object.values(data)[0]
+        : null;
+      _searchQuotes = Array.isArray(values)
+        ? values.filter(q => typeof q === "string" && q.trim())
+        : [];
+      if (_searchQuotes.length && cache?.enabled()) cache.write("searchquotes", _searchQuotes);
+    } catch {
+      if (_searchQuotes === null) _searchQuotes = [];
+    }
+    return _searchQuotes;
+  }
+  document.addEventListener("ws:refetch", () => {
+    if (window.WS_DataCache?.enabled()) _loadSearchQuotes(true);
+  });
+
+  function _nextSearchQuote() {
+    if (!_searchQuotes || !_searchQuotes.length) return "Search assets...";
+    const q = _searchQuotes[_searchQuotesIdx % _searchQuotes.length];
+    _searchQuotesIdx++;
+    return q;
+  }
+
+  function initPlaceholders() {
+    const { searchInput } = dom || {};
+    if (!searchInput) return;
+
+    const FADE = 450, HOLD = 4000;
+
+    const fadePlaceholder = (input, text, cb) => {
+      input.classList.remove("fade-in");
+
+      void input.offsetWidth;
+      input.classList.add("fade-out");
+      setTimeout(() => {
+        const shown = truncateText(text, 26);
+        input.placeholder = shown;
+        input.title = text;
+        fitInputText(input, shown);
+        input.classList.remove("fade-out");
+        void input.offsetWidth;
+        input.classList.add("fade-in");
+        setTimeout(() => { input.classList.remove("fade-in"); cb?.(); }, FADE);
+      }, FADE);
+    };
+
+    window.startPlaceholderCycle = () => {
+      if (window._placeholderRunning) return;
+      window._placeholderRunning = true;
+
+      _loadSearchQuotes();
+
+      const loop = async () => {
+
+        await new Promise(r => fadePlaceholder(searchInput, _nextSearchQuote(), r));
+        await delay(HOLD);
+
+        const pageless = !window.WS_Favorites?.viewOn && window.WS_Paging?.effective().layout === "pageless";
+        const visible = window.WS_Favorites?.viewOn
+          ? (window._allCards || []).filter(c => c.style.display === "flex").length
+          : (pageless ? window._allCards || [] : window._cardIndex?.get(+window.currentPage) || [])
+              .filter(c => c.dataset.filtered === "true").length;
+        await new Promise(r => fadePlaceholder(searchInput, `${visible} assets ${pageless ? "in view" : "on this page"}`, r));
+        await delay(HOLD);
+
+        if (window._placeholderRunning) loop();
+      };
+      loop();
+    };
+  }
+
+  let _resolveSheetData;
+  window._sheetDataReady = new Promise(res => { _resolveSheetData = res; });
+
+  function _isValidAssetsShape(data) {
+    return Array.isArray(data);
+  }
+
+  // Early access: the tester builds (type "early access" / "tester") are
+  // saved for the credits page (ws_tester_assets), and any not announced
+  // before get one alert pointing there (ws_tester_seen, by link). Waits
+  // for the tour to finish so it doesn't pop up over it.
+  const TESTER_LIST_KEY = "ws_tester_assets";
+  const TESTER_SEEN_KEY = "ws_tester_seen";
+  function _noteEarlyAccess(rows) {
+    const list = rows.map(getAssetMeta).filter((m) => m.earlyAccess && !m.hidden && m.linkTrim)
+      .map((m) => ({ title: m.title, author: m.author, link: m.link, image: m.image, description: m.description }));
+    try { localStorage.setItem(TESTER_LIST_KEY, JSON.stringify(list)); } catch (_) {}
+
+    let seen;
+    try { seen = JSON.parse(localStorage.getItem(TESTER_SEEN_KEY) || "[]"); } catch (_) { seen = []; }
+    if (!Array.isArray(seen)) seen = [];
+    const fresh = list.filter((a) => !seen.includes(a.link));
+    if (!fresh.length) return;
+
+    const announce = () => {
+      try { localStorage.setItem(TESTER_SEEN_KEY, JSON.stringify(list.map((a) => a.link))); } catch (_) {}
+      const n = fresh.length;
+      window.WS_Alert?.show({
+        icon: "stars",
+        title: n === 1 ? "New tester asset available" : `${n} new tester assets available`,
+        text: n === 1
+          ? `"${fresh[0].title || "Untitled"}" is out for testers. Find it under Early access in Credits & achievements.`
+          : `${fresh.slice(0, 3).map((a) => `"${a.title || "Untitled"}"`).join(", ")}${n > 3 ? " and more" : ""} are out for testers. Find them under Early access in Credits & achievements.`,
+        action: { label: "Open Credits & achievements", href: new URL("assets/system/pages/credits-n-achievements/index.html#early", _siteRoot()).href },
+        duration: 12000,
+      });
+    };
+    if (window.WS_Tutorial?.pending() || window.WS_Tutorial?.active()) {
+      document.addEventListener("ws:tutorial-done", () => setTimeout(announce, 800), { once: true });
+    } else setTimeout(announce, 1500);
+  }
+  // The site root, from this script's URL (index.html and pages/main.html alike).
+  const _siteRoot = () => new URL("../../../", document.querySelector("script[src*='js/main.js']")?.src || location.href);
+
+  // A load from the data cache skips the asset fetch, which is where the
+  // server would normally refuse a revoked ticket, so the ticket is checked
+  // on its own in the background (one small request). Refused: the saved
+  // copy is deleted and the ticket gate comes back, as with a live fetch.
+  // Unreachable (offline): the saved copy keeps working.
+  function _recheckTicket() {
+    const T = window.WS_Ticket;
+    if (!T?.check) return;
+    T.check().then((st) => {
+      if (st === "approved") return;
+      window.WS_DataCache?.clear();
+      T.revoke(st);
+    }).catch(() => {});
+  }
+
+  // Every load fetches live, unless the user turned on the data cache
+  // (Settings → Page behaviour, datacache.js): then the saved copy is used
+  // and DATA isn't contacted until R refetches. With the cache off there's
+  // no fallback: if the live fetch fails, that surfaces as a visible crash,
+  // not a quiet substitution of old data.
+  async function loadAssets() {
+    const fetchUrl = window._activeFetchUrl || config.sheetUrl;
+    const cacheable = fetchUrl === config.sheetUrl && !!window.WS_DataCache?.enabled();
+    let raw;
+
+    // No fetch at all until this browser's access ticket is approved; the
+    // ticket gate (ticket.js) is up over the loader meanwhile.
+    await ticketReady();
+
+    // The <head> of index.html starts this exact request before the rest of
+    // the page (css, cdn scripts, this file) has even downloaded. Use it once
+    // on first load if it's for the same endpoint; reloads always refetch live.
+    const early = window.__wsAssetsPrefetch;
+    window.__wsAssetsPrefetch = null;
+
+    // Saved copy (data cache on, and not an R refetch).
+    if (cacheable && !window._forceRefetch) {
+      raw = await window.WS_DataCache.read("assets");
+      if (Array.isArray(raw)) {
+        window.showToast?.("Loaded your saved copy. Press R to refetch.", 2600);
+        _recheckTicket();
+      } else raw = undefined;
+    }
+
+    if (raw === undefined) try {
+      if (early && early.url === fetchUrl && early.promise) {
+        raw = await early.promise;
+      } else {
+        const res = await fetch(bustCache(fetchUrl), { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        raw = await res.json();
+      }
+      // A stored ticket the server no longer accepts (revoked or removed in
+      // TicketApprovalWS): reopen the gate and try again once approved,
+      // rather than crashing.
+      if (raw && !Array.isArray(raw) && raw.ticket && window.WS_Ticket) {
+        await window.WS_Ticket.revoke(raw.ticket);
+        return loadAssets();
+      }
+      if (!_isValidAssetsShape(raw)) {
+        console.error("[loadAssets] Network response is not a valid array:", raw);
+        throw new Error("Invalid data from network");
+      }
+      if (cacheable) window.WS_DataCache.write("assets", raw);
+    } catch (err) {
+      console.error("[loadAssets] fetch failed:", err);
+      _resolveSheetData();
+      runCrashSequence();
+      // Anything waiting on ws:assets-loaded (the tour) can stop waiting.
+      document.dispatchEvent(new CustomEvent("ws:assets-failed", { detail: { error: String(err?.message || err) } }));
+      throw err;
+    }
+
+    _resolveSheetData(raw);
+
+    // Single pass: drops empty rows and pre-parses every field once.
+    const data = prepareAssets(raw);
+    window.assetsData = data;
+
+    const savedPage = +sessionStorage.getItem("currentPage") || 1;
+    window.currentPage   = savedPage;
+    window._pageRestored = true;
+
+    const earlyIndicator = window.dom?.pageIndicator;
+    if (earlyIndicator) earlyIndicator.textContent = `Page ${savedPage}`;
+
+    getLoadedGifDuration().catch(() => {});
+
+    const promises = createAssetCards(data);
+
+    const activePromises = promises.filter(p => p.page === savedPage).map(p => p.promise);
+    const settle         = activePromises.length ? Promise.all(activePromises) : Promise.resolve();
+    settle.finally(() => {
+      if (typeof window._restoreScrollY === "function") window._restoreScrollY();
+    });
+
+    document.dispatchEvent(new CustomEvent("ws:assets-loaded", { detail: { assets: data } }));
+    _noteEarlyAccess(data);
+
+    return true;
+  }
+
+  window._reloading           = false;
+  window._reloadCooldownUntil = 0;
+  const RELOAD_COOLDOWN_MS    = 15000;
+
+  window.reloadAssets = async function () {
+    if (window._reloading) return;
+    window._reloading          = true;
+    window._pageRestored       = false;
+    window._placeholderRunning = false;
+
+    sessionStorage.removeItem("scrollY");
+
+    window._cardIndex = new Map();
+    window._allCards  = [];
+    window._pageLoadState = new Map();
+
+    document.body.classList.add("ws-loading");
+
+    document.getElementById("containerLoader")?.remove();
+    const loader = document.createElement("div");
+    loader.id = "containerLoader";
+
+    const loaderImg = document.createElement("img");
+    loaderImg.alt = "";
+    applyGifToImg(loaderImg, _getTheme(), "loading");
+    loader.appendChild(loaderImg);
+    document.body.appendChild(loader);
+    window._loaderSequenceRunning = false;
+
+    window._sheetDataReady = Promise.resolve();
+    _resolveSheetData = () => {};
+
+    // R always goes to DATA, data cache or not; the quote box and search
+    // quotes refresh their saved copies on this too.
+    window._forceRefetch = true;
+    document.dispatchEvent(new CustomEvent("ws:refetch"));
+
+    try {
+      await loadAssets();
+      window._reloadCooldownUntil = Date.now() + RELOAD_COOLDOWN_MS;
+      if (typeof window.startPlaceholderCycle === "function") window.startPlaceholderCycle();
+      return true;
+    } catch {
+      throw new Error("reload failed");
+    } finally {
+      window._reloading = false;
+      window._forceRefetch = false;
+    }
+  };
+
+  function initMuteButton() {
+    const MUTE_KEY = "ws_muted";
+
+    window._quotesMuted = localStorage.getItem(MUTE_KEY) === "true";
+
+    function _applyAudioMute(muted) {
+      document.querySelectorAll("audio, video").forEach(a => { a.muted = muted; });
+    }
+
+    _applyAudioMute(window._quotesMuted);
+
+    const _audioObserver = new MutationObserver(() => {
+      _applyAudioMute(window._quotesMuted);
+    });
+    _audioObserver.observe(document.body, { childList: true, subtree: true });
+
+    window.WS_Audio = {
+      setMuted: function (value) {
+        window._quotesMuted = !!value;
+        _applyAudioMute(window._quotesMuted);
+      },
+      isMuted: function () {
+        return window._quotesMuted;
+      }
+    };
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    initElements();
+    initFavorites();
+    initPaging();
+    initPlaceholders();
+    initMuteButton();
+
+    window.applyThemeGifs?.(_getTheme());
+
+    await loadAssets().catch(() => {});
+    window._refreshCategoryDropdown?.();
+
+    if (typeof window.startPlaceholderCycle === "function") window.startPlaceholderCycle();
+  });
+})();
