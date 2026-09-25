@@ -72,7 +72,9 @@
     typeof window.WS_getAssetMeta === "function" ? window.WS_getAssetMeta(row) : null;
 
   function isEligible(m) {
-    if (!m || m.hidden || m.earlyAccess || !m.linkTrim) return false;
+    // Merged rows are other versions of a bundle's lead (main.js): the
+    // lead can be picked, its versions don't count as separate assets.
+    if (!m || m.hidden || m.earlyAccess || m.merged || !m.linkTrim) return false;
     const s = m.statusSet;
     return !(s.has("cooked") || s.has("soon") || s.has("fix"));
   }

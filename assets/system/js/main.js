@@ -433,6 +433,428 @@ window.addEventListener("load", () => {
   // type values (spaces, dashes and underscores ignored) that mark an
   // asset as early access: "early access", "early-access", "tester", …
   const _EARLY_ACCESS_TYPES = new Set(["earlyaccess", "tester", "testers"]);
+  const _MERGE_WORDS = ["merge", "merged"];
+
+  // ── Bundles ────────────────────────────────────────────────────────────
+  // Version rows (beta, v2, copies…) share one card with the asset they
+  // follow. In sheet order, a row marked merge joins the bundle of the row
+  // before it; the bundle ends at the next row without merge:
+  //
+  //   Asset         ok        ← the bundle's card (its "head")
+  //   Asset (beta)  ok|merge  ← version 2
+  //   Asset v2      ok|merge  ← version 3
+  //   Other asset   ok        ← not merged: a new card
+  //
+  // Shift+click the card to cycle versions. Returns [[row, …], …] in sheet
+  // order; a merge row with nothing above it is just its own card.
+  function _groupBundles(rows) {
+    const groups = [];
+    let cur = null;
+    for (const row of rows) {
+      if (cur && getAssetMeta(row).merged) cur.push(row);
+      else { cur = [row]; groups.push(cur); }
+    }
+    return groups;
+  }
+
+  // ── Local icon folders ───────────────────────────────────────────────
+  // Icons waiting to go up to the R2 bucket are staged at the repo root as
+  // iconsN/<project>/icon.<ext> (icons3, icons4, …; git-ignored). When the
+  // site runs locally and an asset's hosted image fails (not on the bucket
+  // yet), the card shows those before the placeholder. No glow: those assets
+  // are marked "soon" in the sheet instead. Never on the deployed site: no
+  // pointless requests there.
+  const _REPO_ROOT = new URL("../../../", document.currentScript?.src || location.href);
+  const _LOCAL_HOST = /^(localhost|0\.0\.0\.0|127(\.\d+){3}|\[?::1\]?|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2}|.+\.local)$/i;
+  const _isLocalSite = () => location.protocol === "file:" || _LOCAL_HOST.test(location.hostname);
+  const _ICON_FOLDERS = Array.from({ length: 20 }, (_, i) => `icons${i + 1}`);
+  const _ICON_FILE = /^icon\.(png|jpe?g|webp|gif|avif)$/i;
+  const _IMAGE_FILE = /\.(png|jpe?g|webp|gif|avif)$/i;
+  const _normName = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  // Names from a local server's directory listing (Live Server, python -m
+  // http.server, …), or null where there's no listing (file://, plain hosts).
+  async function _listing(url) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok || !/html/i.test(res.headers.get("content-type") || "")) return null;
+      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      return [...doc.querySelectorAll("a[href]")]
+        .map((a) => decodeURIComponent(a.getAttribute("href").split(/[?#]/)[0]).replace(/\/+$/, "").split("/").pop())
+        .filter((n) => n && n !== "..");
+    } catch (_) { return null; }
+  }
+
+  // Built once: normalized project name → [project folder URL, …], icons1
+  // first. null = no listings, so _localIconCandidates guesses paths instead.
+  let _localIconIndex;
+  function _getLocalIconIndex() {
+    if (_localIconIndex) return _localIconIndex;
+    _localIconIndex = Promise.all(_ICON_FOLDERS.map(async (f) => [f, await _listing(new URL(`${f}/`, _REPO_ROOT).href)]))
+      .then((found) => {
+        const index = new Map();
+        let any = false;
+        for (const [f, names] of found) {
+          if (!names) continue;
+          any = true;
+          for (const n of names) {
+            const k = _normName(n);
+            if (!k || _IMAGE_FILE.test(n)) continue;
+            if (!index.has(k)) index.set(k, []);
+            index.get(k).push(new URL(`${f}/${encodeURIComponent(n)}/`, _REPO_ROOT).href);
+          }
+        }
+        return any ? index : null;
+      });
+    return _localIconIndex;
+  }
+
+  // The project names an asset could be staged under: its link's folder, its
+  // image URL's folder (…/<name>/icon.png) and its title, as typed.
+  function _iconNames(m, link) {
+    const seg = (url, re) => (String(url || "").match(re) || [])[1] || "";
+    const fromLink  = seg(link, /\/([^\/?#]+)\/(?:index\.html?)?(?:[?#].*)?$/i) || seg(link, /\/([^\/?#]+?)(?:\.html?(?:\.txt)?)?(?:[?#].*)?$/i);
+    const fromImage = seg(m.imageTrim, /\/([^\/?#]+)\/[^\/?#]+\.(?:png|jpe?g|webp|gif|avif)(?:[?#].*)?$/i);
+    const fromTitle = m.titleLC.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return [...new Set([fromLink, fromImage, fromTitle].map((n) => decodeURIComponent(n)).filter(Boolean))];
+  }
+
+  // Local icon URLs to try for an asset, best first ([] off the local site).
+  async function _localIconCandidates(m, link) {
+    if (!_isLocalSite()) return [];
+    const names = _iconNames(m, link);
+    const index = await _getLocalIconIndex();
+    if (index) {
+      const out = [];
+      for (const dir of [...new Set(names.flatMap((n) => index.get(_normName(n)) || []))]) {
+        const files = await _listing(dir);
+        const pick = files && (files.find((f) => _ICON_FILE.test(f)) || files.find((f) => _IMAGE_FILE.test(f)));
+        if (pick) out.push(dir + encodeURIComponent(pick));
+        else if (!files) out.push(...["png", "jpg", "jpeg", "webp", "gif"].map((e) => `${dir}icon.${e}`));
+      }
+      return out;
+    }
+    // No listings: guess the usual spots (icons3 onward, as typed and without
+    // dashes, png/jpg). Only reached locally, and only for a failed image.
+    const variants = [...new Set(names.flatMap((n) => [n, n.replace(/-/g, "")]))];
+    return _ICON_FOLDERS.slice(2, 9).flatMap((f) =>
+      variants.flatMap((n) => ["png", "jpg"].map((e) => new URL(`${f}/${encodeURIComponent(n)}/icon.${e}`, _REPO_ROOT).href)));
+  }
+
+  // The version picked on each bundle, by the lead's link → the picked
+  // version's link, so a reload opens on the version you last chose. Links,
+  // not titles: versions of one asset often share a title ("Cave Story" and
+  // its web port). _versionKey falls back to the title for a row without one.
+  const _BUNDLE_PICK_KEY = "ws_bundle_pick";
+  const _versionKey = (m) => m.linkTrim || m.titleLC;
+  const _readPicks = () => {
+    try { return JSON.parse(localStorage.getItem(_BUNDLE_PICK_KEY) || "{}") || {}; } catch (_) { return {}; }
+  };
+  const _savePick = (leadKey, versionKey) => {
+    const picks = _readPicks();
+    if (versionKey === leadKey) delete picks[leadKey]; else picks[leadKey] = versionKey;
+    try { localStorage.setItem(_BUNDLE_PICK_KEY, JSON.stringify(picks)); } catch (_) {}
+  };
+
+  // Card classes that belong to one version, swapped with it.
+  const _VERSION_CLASSES = ["fix", "soon", "cooked"];
+
+  // Which way the decks lean (Settings → Bundles, paging.js): -1 = right
+  // (the default), 1 = left. Every deck re-fits its poses when it changes.
+  const _bundleTilt = () => (window.WS_BundleSettings?.get().tilt === "left" ? 1 : -1);
+  document.addEventListener("ws:bundle-settings-changed", () => {
+    for (const c of window._allCards || []) c._layoutDeck?.();
+  });
+
+  // How far a bundle card may draw past its own edge (see the CSS below).
+  // 0 where overflow-clip-margin isn't supported: those keep the grid's
+  // plain clipping and the deck fits inside the card instead.
+  const _DECK_BLEED = typeof CSS !== "undefined" && CSS.supports?.("overflow-clip-margin", "1px") ? 12 : 0;
+
+  // Back-card poses as [x px, angle deg] for a hand leaning left (mirrored
+  // for right), at rest and while the card is hovered; slot 1 is the next
+  // version up. These are the most the deck will spread: each is scaled
+  // down to fit the room around the image (_fitPose).
+  const _DECK_POSES = [
+    { rest: [-13, -8],  hover: [-24, -12] },
+    { rest: [13, 8],    hover: [24, 12] },
+    { rest: [-22, -14], hover: [-36, -19] },
+  ];
+
+  // Largest version of a pose (same shape, scaled by s <= 1) whose rotated
+  // card stays inside `room` around a W x H image: left/right/top past the
+  // image, and bottom down to just above the title. The card turns about
+  // 50% 90% (its transform-origin), and is lifted as needed so a tilted
+  // corner never dips under the title. Returns { tf, s } (a CSS transform).
+  function _fitPose([tx0, deg0], W, H, room, tilt) {
+    const ox = W / 2, oy = 0.9 * H;
+    const corners = [[-ox, -oy], [ox, -oy], [-ox, H - oy], [ox, H - oy]];
+    for (let s = 1; s > 0.12; s -= 0.04) {
+      const tx = tx0 * s * tilt, deg = deg0 * s * tilt, rad = deg * Math.PI / 180;
+      const c = Math.cos(rad), n = Math.sin(rad);
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const [x, y] of corners) {
+        const px = ox + x * c - y * n + tx, py = oy + x * n + y * c;
+        minX = Math.min(minX, px); maxX = Math.max(maxX, px);
+        minY = Math.min(minY, py); maxY = Math.max(maxY, py);
+      }
+      if (minX < -room.l || maxX > W + room.r) continue;
+      // Lift (negative y) just enough to clear the title, if the top allows.
+      const ty = Math.min(0, H + room.b - maxY);
+      if (minY + ty < -room.t) continue;
+      return { tf: `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) rotate(${deg.toFixed(2)}deg)`, s };
+    }
+    return { tf: "none", s: 0 };   // no room at all: tucked straight behind
+  }
+
+  function _injectBundleCSS() {
+    if (document.getElementById("__ws_bundle_css__")) return;
+    const s = document.createElement("style");
+    s.id = "__ws_bundle_css__";
+    s.textContent = `
+      .asset-card.asset-bundle { position: relative; }
+
+      /* The deck: the other versions' images fanned out behind the front
+         one like a hand of cards. Spans, not divs/imgs, so the grid's
+         "#container div" / "div img" rules leave them alone. Placed over
+         the front image's box by _makeBundle (--deck-x/y/w/h). */
+      .asset-card.asset-bundle > .asset-link { position: relative; z-index: 1; }
+      .asset-card .bundle-deck { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+      .asset-card .bundle-deck-card {
+        position: absolute;
+        left: var(--deck-x, 50%); top: var(--deck-y, 15px);
+        width: var(--deck-w, 120px); height: var(--deck-h, 120px);
+        border-radius: 14px;
+        border: 2px solid rgba(255,255,255,0.28);
+        background: rgba(0,0,0,0.45) center / contain no-repeat;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+        filter: brightness(0.72) saturate(0.85);
+        transform-origin: 50% 90%;
+        transition: transform 0.25s cubic-bezier(.3,1.4,.5,1), filter 0.2s ease;
+        /* The deck sits under the front image, so only the parts peeking
+           out take clicks: click one to bring that version up. */
+        pointer-events: auto;
+        cursor: pointer;
+      }
+      /* Each back card's pose is measured to fit (_fitPose): --t at rest,
+         --th while hovered, which spreads the hand to show what's in it. */
+      .asset-card .bundle-deck-card { transform: var(--t, none); }
+      .asset-card.asset-bundle:hover .bundle-deck-card { transform: var(--th, var(--t, none)); filter: brightness(0.85) saturate(1); }
+      .asset-card .bundle-deck-card:hover { filter: brightness(1.05) saturate(1.1) !important; }
+
+      /* Room for the fanned deck: the grid clips every card at its edge
+         (#container div { overflow: hidden }). A bundle may draw a few px
+         past it (_DECK_BLEED), and anything further is still clipped, so
+         nothing spills into the next card. Grail cards already show their
+         overflow (main.css) and keep that. Text stays clipped to the card
+         as before. */
+      @supports (overflow-clip-margin: 1px) {
+        .asset-card.asset-bundle:not(:has(.has-grail)) { overflow: clip !important; overflow-clip-margin: 12px; }
+      }
+      .asset-card.asset-bundle > :is(h3, p) { max-width: 100%; overflow: hidden; }
+      @media (prefers-reduced-motion: reduce) {
+        .asset-card .bundle-deck-card { transition: none; }
+      }
+      /* A fix / soon / cooked card normally takes no clicks at all (main.css).
+         On a bundle only that version's link and buttons are locked, so
+         Shift+click can still move on to a working version. */
+      .asset-card.ready.asset-bundle.soon,
+      .asset-card.ready.asset-bundle.fix,
+      .asset-card.ready.asset-bundle.cooked { pointer-events: auto; }
+      .asset-card.asset-bundle:is(.soon, .fix, .cooked) :is(.asset-link, .card-actions) { pointer-events: none; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  // Turns the lead's card into the bundle: every version's parts (image
+  // link, title, author, buttons) are faces, and Shift+click on the card
+  // slides to the next one. The lead card stays the one grid element, so
+  // paging, search and favorites keep working on a single card; search
+  // matches any version's title or author.
+  function _makeBundle(card, versions) {
+    _injectBundleCSS();
+    const leadKey = _versionKey(versions[0].m);
+    versions.forEach((v, i) => {
+      v.classes = _VERSION_CLASSES.filter((c) => v.card.classList.contains(c));
+      if (i) v.card._host = card;
+      v.face[0].title += ` Shift+click the card to switch version (${i + 1}/${versions.length}).`;
+    });
+
+    card.classList.add("asset-bundle");
+    card._versions = versions;
+    card._favKeys  = versions.map((v) => v.m.titleLC);
+    card._hay      = versions.map((v) => v.m.titleLC + " " + v.m.authorLC).join(" ");
+
+    // Up to three versions peek out behind the front one, next-up first.
+    const deck = document.createElement("span");
+    deck.className = "bundle-deck";
+    deck.setAttribute("aria-hidden", "true");
+    const backs = Array.from({ length: Math.min(versions.length - 1, 3) }, (_, k) => {
+      const s = document.createElement("span");
+      s.className = `bundle-deck-card d${k + 1}`;
+      return deck.appendChild(s);
+    });
+    card.prepend(deck);
+
+    const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    let cur = 0, busy = false;
+
+    // Back card k holds the version k+1 places after the front one.
+    const versionAt = (k) => (cur + 1 + k) % versions.length;
+    // A back card shows the image its version actually loaded (a staged
+    // local icon or the placeholder when the hosted one failed).
+    const shownImage = (v) => {
+      const im = v.face[0].querySelector("img.asset-img");
+      return im && im.complete && im.naturalWidth ? im.currentSrc || im.src : v.m.image;
+    };
+    const paintDeck = () => {
+      backs.forEach((s, k) => {
+        const v = versions[versionAt(k)];
+        s.style.backgroundImage = `url("${String(shownImage(v)).replace(/"/g, "%22")}")`;
+        s.title = `Switch to "${v.m.title || "Untitled"}" (${versionAt(k) + 1}/${versions.length})`;
+      });
+    };
+    // Lay the deck over the front image's box, then fit each back card's
+    // rest and hover pose into the room around it. Offsets, not
+    // getBoundingClientRect, so the card's hover scale / pop-in don't skew
+    // it; a ResizeObserver re-runs it when the card first shows or the grid
+    // size setting changes the image size, and a tilt change re-runs it too.
+    let fits = [];
+    const layoutDeck = () => {
+      const [link, titleEl] = versions[cur].face;
+      const w = link.querySelector(".asset-img-wrapper");
+      if (!w || !w.offsetWidth) return;
+      let x = 0, y = 0;
+      for (let el = w; el && el !== card; el = el.offsetParent) { x += el.offsetLeft; y += el.offsetTop; }
+      const W = w.offsetWidth, H = w.offsetHeight;
+      deck.style.setProperty("--deck-x", `${x}px`);
+      deck.style.setProperty("--deck-y", `${y}px`);
+      deck.style.setProperty("--deck-w", `${W}px`);
+      deck.style.setProperty("--deck-h", `${H}px`);
+      const titleTop = titleEl?.offsetParent === card ? titleEl.offsetTop : y + H + 8;
+      const room = {
+        l: x + _DECK_BLEED,
+        r: card.clientWidth - x - W + _DECK_BLEED,
+        t: y + _DECK_BLEED,
+        b: Math.max(0, titleTop - (y + H) - 2),
+      };
+      const tilt = _bundleTilt();
+      fits = backs.map((s, k) => {
+        const pose = _DECK_POSES[k];
+        const rest = _fitPose(pose.rest, W, H, room, tilt);
+        const hover = _fitPose(pose.hover, W, H, room, tilt);
+        s.style.setProperty("--t", rest.tf);
+        s.style.setProperty("--th", hover.tf);
+        return { rest, hover };
+      });
+    };
+    card._layoutDeck = layoutDeck;
+    if (typeof ResizeObserver === "function") new ResizeObserver(layoutDeck).observe(card);
+    paintDeck();
+    versions.forEach((v) => v.face[0].querySelector("img.asset-img")?.addEventListener("load", paintDeck));
+
+    // Shuffle: the front card is tossed away from the deck's lean (only as
+    // far as the deck itself was allowed to spread), and the one coming up
+    // is drawn from its back card's fitted pose, so it looks pulled out of
+    // the hand.
+    const toss = () => {
+      const tilt = _bundleTilt(), s = fits[0]?.hover.s ?? 1;
+      return [
+        { opacity: 1, transform: "none" },
+        { opacity: 0, transform: `translate(${(28 * s * tilt).toFixed(1)}px, 0) rotate(${(12 * s * tilt).toFixed(2)}deg) scale(0.88)` },
+      ];
+    };
+    const draw = (k) => [
+      { opacity: 0.55, transform: `${fits[k]?.rest.tf || fits[0]?.rest.tf || "none"} scale(0.94)` },
+      { opacity: 1, transform: "none" },
+    ];
+    const FADE_OUT = [{ opacity: 1 }, { opacity: 0 }];
+    const FADE_IN  = [{ opacity: 0 }, { opacity: 1 }];
+
+    // A version coming up from the deck: a copy of its back card lifts out
+    // of the hand, un-tilts and lands square on the front image's spot
+    // (dropping the card frame as it lands), while the old front card tips
+    // away into the deck. Versions not in the deck (bundles of 5+) are drawn
+    // from d1's pose instead.
+    const show = (i, animate) => {
+      const from = versions[cur], to = versions[i];
+      const k    = (i - cur - 1 + versions.length) % versions.length;   // its deck slot
+      const back = backs[k];
+      let fly = null, outs = [];
+
+      const swap = () => {
+        from.face.forEach((n) => n.remove());
+        outs.forEach((an) => an?.cancel());   // they held the old face hidden
+        deck.after(...to.face);
+        _VERSION_CLASSES.forEach((c) => card.classList.toggle(c, to.classes.includes(c)));
+        card.classList.toggle("ws-favorited", !!window.WS_Favorites?.has(to.m.titleLC));
+        card._favKey = to.m.titleLC;
+        cur = i;
+        if (back) back.style.visibility = "";
+        paintDeck();
+        layoutDeck();
+        if (animate) {
+          if (!fly) to.face[0].animate?.(draw(k), { duration: 260, easing: "cubic-bezier(.3,1.3,.5,1)" });
+          to.face.slice(1).forEach((n) => n.animate?.(FADE_IN, { duration: 180, easing: "ease-out" }));
+        }
+        fly?.remove();
+        busy = false;
+      };
+
+      if (!animate || reduced()) { animate = false; swap(); return; }
+      busy = true;
+
+      const tossed = toss();
+      outs = from.face.map((n, j) => n.animate?.(j ? FADE_OUT : tossed,
+        { duration: j ? 140 : 260, easing: "ease-in", fill: "forwards" }));
+
+      let flight = null;
+      if (back && back.offsetWidth) {
+        const cs = getComputedStyle(back);
+        fly = back.cloneNode(false);
+        fly.removeAttribute("title");
+        Object.assign(fly.style, {
+          left: cs.left, top: cs.top, width: cs.width, height: cs.height,
+          zIndex: "3", pointerEvents: "none", transition: "none",
+        });
+        card.appendChild(fly);
+        back.style.visibility = "hidden";
+        flight = fly.animate([
+          { transform: cs.transform, filter: cs.filter, offset: 0 },
+          { transform: "translateY(-10px) rotate(0deg) scale(1.06)", filter: "none", offset: 0.6 },
+          { transform: "none", filter: "none", borderColor: "transparent",
+            backgroundColor: "transparent", boxShadow: "none", offset: 1 },
+        ], { duration: 340, easing: "cubic-bezier(.3,1.1,.5,1)", fill: "forwards" }).finished;
+      }
+
+      Promise.all([...outs.map((an) => an?.finished), flight]).then(swap, swap);
+    };
+
+    // Capture phase, so the card's own link never opens on a Shift+click.
+    // The buttons row keeps its clicks, and the title keeps Shift+click to
+    // copy it.
+    const goTo = (i) => {
+      if (busy || i === cur) return;
+      show(i, true);
+      _savePick(leadKey, _versionKey(versions[i].m));
+    };
+    card.addEventListener("click", (e) => {
+      if (!e.shiftKey) return;
+      if (e.target.closest(".card-actions, h3")) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      goTo((cur + 1) % versions.length);
+    }, true);
+    // A plain click on a peeking back card brings that version up.
+    backs.forEach((s, k) => s.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      goTo(versionAt(k));
+    }));
+
+    const picked = versions.findIndex((v) => _versionKey(v.m) === _readPicks()[leadKey]);
+    if (picked > 0) show(picked, false);
+  }
 
   function _buildMeta(row, cols) {
     const statusRaw = safeStr(row.status).toLowerCase();
@@ -445,6 +867,14 @@ window.addEventListener("load", () => {
       if (statusSet.has(t)) { typeSet.add(t); statusSet.delete(t); }
     }
     if (typeSet.has("cooked")) { statusSet.add("cooked"); typeSet.delete("cooked"); }
+    // Bundles: "merge" / "merged" in status (ok|merge) or type makes this
+    // row another version of the asset above it (see _groupBundles). Taken
+    // out of the stacks so nothing else reads it as a status or badge.
+    let merged = false;
+    for (const t of _MERGE_WORDS) {
+      if (statusSet.delete(t)) merged = true;
+      if (typeSet.delete(t))   merged = true;
+    }
     // Early access / tester builds: kept off the main grid and daily picks,
     // listed on the credits page instead (see _noteEarlyAccess).
     const earlyAccess = [...typeSet].some((t) => _EARLY_ACCESS_TYPES.has(t.replace(/[\s_-]+/g, "")));
@@ -467,7 +897,7 @@ window.addEventListener("load", () => {
       image:       rawImg || config.fallbackImage,
       imageTrim:   rawImg.trim(),
       page:        Number(row.page) || 1,
-      statusSet, typeSet, hidden, earlyAccess,
+      statusSet, typeSet, hidden, earlyAccess, merged,
       categoryRaw: cat,
       subcategoryRaw: sub,
       category:    cat.toLowerCase(),
@@ -1026,11 +1456,19 @@ window.addEventListener("load", () => {
 
     // Cards are built in sheet order; their grid order (sheet / A–Z, per
     // page or across everything) comes from WS_Paging.orderCards below.
-    const domOrdered = (Array.isArray(data) ? data : []).filter((asset) => {
+    // Each card is a bundle of one or more versions (_groupBundles); hidden
+    // and early-access versions drop out, and the first one left leads.
+    const shown = (asset) => {
       const m = getAssetMeta(asset);
       return !m.hidden && !m.earlyAccess;
-    });
+    };
+    const bundles = _groupBundles(Array.isArray(data) ? data : [])
+      .map((group) => group.filter(shown))
+      .filter((group) => group.length);
     const builtCards = [];
+    // A version card that isn't showing lives outside the grid; its buttons
+    // act on the bundle's card instead (_host).
+    const hostOf = (c) => c._host || c;
 
     const badgeMap = {
       featured: "https://raw.githubusercontent.com/01110010-00110101/01110010-00110101.github.io/main/system/images/featured-cover.png",
@@ -1196,7 +1634,10 @@ window.addEventListener("load", () => {
       };
     }
 
-    for (const asset of domOrdered) {
+    // One version's card. `primary` is the bundle's lead: only it goes in
+    // the grid and holds up the page loader; the others are faces the lead
+    // swaps in (_makeBundle).
+    const buildCard = (asset, primary) => {
       // All parsing already happened in prepareAssets(); read-only from here
       // on (statusSet/typeSet are shared with the meta cache, never mutate).
       const m          = getAssetMeta(asset);
@@ -1252,14 +1693,20 @@ window.addEventListener("load", () => {
       img.fetchPriority = isActivePage ? "high" : "auto";
 
       const imgPromise = new Promise((resolve) => {
-        // Three tiers: the real hosted image, then a local .../<name>/icon.png
-        // guess (useful while icons are still being imported port-by-port and
-        // most don't have a hosted icon.png yet), then the generic placeholder.
-        // Any tier past the primary asset.image counts as "fallback active" —
-        // flag it visually (image only, per the red-glow ask) so it's obvious
-        // at a glance which cards still need a real hosted icon.png.
+        // Four tiers: the real hosted image; then, running locally, a staged
+        // icon from iconsN/<project>/ at the repo root (not on the R2 bucket
+        // yet, see _localIconCandidates); then a local .../<name>/icon.png
+        // guess (useful while icons are still being imported port-by-port);
+        // then the generic placeholder. The last two tiers count as "fallback
+        // active" — flag them visually (image only, per the red-glow ask) so
+        // it's obvious at a glance which cards have no icon anywhere. A staged
+        // icon doesn't glow: it exists, just isn't uploaded yet.
         const hasRealImage  = !!m.imageTrim;
-        const localFallback = localIconFallback(link);
+        // The ../<name>/icon.png guess only exists on a local checkout with
+        // the asset folders beside the site. On the deployed site it was a
+        // guaranteed 404 for every missing image (~540 dead requests per
+        // load, competing with the real images), so it's local-only.
+        const localFallback = _isLocalSite() ? localIconFallback(link) : "";
         const onLoad        = () => resolve();
         const markFallback  = () => img.classList.add("img-fallback");
 
@@ -1281,11 +1728,25 @@ window.addEventListener("load", () => {
           }
         };
 
+        // Each staged icon in turn; the first one that loads wins.
+        const tryStaged = () => {
+          _localIconCandidates(m, link).then((urls) => {
+            const next = () => {
+              const url = urls.shift();
+              if (!url) { tryLocal(); return; }
+              img.onload  = onLoad;
+              img.onerror = next;
+              img.src = url;
+            };
+            next();
+          }, tryLocal);
+        };
+
         if (!hasRealImage) {
-          tryLocal();
+          tryStaged();
         } else {
           img.onload  = onLoad;
-          img.onerror = tryLocal;
+          img.onerror = tryStaged;
           img.src = imageSrc;
         }
 
@@ -1295,7 +1756,7 @@ window.addEventListener("load", () => {
         // whenever it does.
         setTimeout(resolve, IMG_WAIT_MS);
       });
-      imagePromises.push({ promise: imgPromise, page: pageNum, card });
+      if (primary) imagePromises.push({ promise: imgPromise, page: pageNum, card });
       wrapper.appendChild(img);
 
       if (typeSet.has("featured")) addOverlay(wrapper, badgeMap.featured, "featured badge", "overlay-featured");
@@ -1358,11 +1819,12 @@ window.addEventListener("load", () => {
         const scheduleNext = () => {
           // Still being built (not in the grid yet) counts as alive; only a
           // card a later render dropped from _allCards stops here.
-          if (!card.isConnected && card.parentNode !== frag && !window._allCards.includes(card)) return;
+          const host = hostOf(card);
+          if (!host.isConnected && host.parentNode !== frag && !window._allCards.includes(host)) return;
           animTimeout = setTimeout(playAnim, (3 + Math.random() * 57) * 1000);
         };
         const playAnim = () => {
-          if (!card.isConnected) { animEl?.remove(); return; }
+          if (!hostOf(card).isConnected) { animEl?.remove(); return; }
           if (isAnimating) return;
           isAnimating = true;
           animEl = document.createElement(isVideo ? "video" : "img");
@@ -1416,7 +1878,7 @@ window.addEventListener("load", () => {
         e.preventDefault(); e.stopPropagation();
         const on = window.WS_Favorites.toggle(favKey);
         paintStar(on);
-        card.classList.toggle("ws-favorited", on);
+        hostOf(card).classList.toggle("ws-favorited", on);
         // In the favorites view this re-flows the favorites pages (an
         // unfavorited card drops out); in the main view nothing moves.
         if (window.WS_Favorites.viewOn) window.filterAssets?.(dom.searchInput?.value || "");
@@ -1628,6 +2090,13 @@ window.addEventListener("load", () => {
       actionsRow.appendChild(bugBtn);
 
       card.append(a, titleEl, authorEl, actionsRow);
+      return { card, m, face: [a, titleEl, authorEl, actionsRow] };
+    };
+
+    for (const group of bundles) {
+      const versions = group.map((asset, i) => buildCard(asset, i === 0));
+      const card = versions[0].card;
+      if (versions.length > 1) _makeBundle(card, versions);
       builtCards.push(card);
       window._allCards.push(card);
     }
@@ -1713,12 +2182,14 @@ window.addEventListener("load", () => {
     // add/remove re-flows every favorites page.
     const getFavLayout = () => {
       const byKey = new Map();
-      for (const c of window._allCards) if (c._favKey) byKey.set(c._favKey, c);
+      // A bundle answers to every version's key; favoriting two of its
+      // versions still gives it one slot.
+      for (const c of window._allCards) for (const k of c._favKeys || [c._favKey]) if (k) byKey.set(k, c);
       const layout = new Map();
       let n = 0;
       for (const key of window.WS_Favorites?.list() || []) {
         const c = byKey.get(key);
-        if (!c) continue;
+        if (!c || layout.has(c)) continue;
         layout.set(c, { page: Math.floor(n / FAV_PAGE_SIZE) + 1, order: n });
         n++;
       }

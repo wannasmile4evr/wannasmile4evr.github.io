@@ -144,3 +144,49 @@
 
   window.WS_Paging = { KEYS, DEFAULTS, SYSTEM_COUNT, get, effective, systemNumber, regrouped, set, reset, orderCards, assignViewPages };
 })();
+
+// ── Bundle settings ────────────────────────────────────────────────────
+// How bundled (version) cards look, set on the Settings page ("Bundles"),
+// read by main.js. Saved per browser:
+//
+//   ws_bundle_tilt   "right" (default) | "left"   which way the deck of
+//                    other versions fans out behind the front card
+//
+// Not part of WS_Paging on purpose: a paging change re-sorts the whole
+// library (main.js), which a look-only setting shouldn't do. Changes (here,
+// or from another tab) fire "ws:bundle-settings-changed" on document.
+(() => {
+  const KEYS     = { tilt: "ws_bundle_tilt" };
+  const DEFAULTS = { tilt: "right" };
+  const ALLOWED  = { tilt: ["right", "left"] };
+
+  const read = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+  function get() {
+    const out = {};
+    for (const [name, allowed] of Object.entries(ALLOWED)) {
+      const v = read(KEYS[name]);
+      out[name] = allowed.includes(v) ? v : DEFAULTS[name];
+    }
+    return out;
+  }
+  const changed = () => document.dispatchEvent(new CustomEvent("ws:bundle-settings-changed", { detail: get() }));
+
+  function set(name, value) {
+    if (!(name in KEYS) || !ALLOWED[name].includes(value)) return;
+    try {
+      if (value === DEFAULTS[name]) localStorage.removeItem(KEYS[name]);
+      else localStorage.setItem(KEYS[name], value);
+    } catch (_) { return; }
+    changed();
+  }
+  function reset() {
+    try { Object.values(KEYS).forEach((k) => localStorage.removeItem(k)); } catch (_) {}
+    changed();
+  }
+
+  window.addEventListener("storage", (e) => {
+    if (e.key === null || Object.values(KEYS).includes(e.key)) changed();
+  });
+
+  window.WS_BundleSettings = { KEYS, DEFAULTS, get, set, reset };
+})();

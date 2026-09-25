@@ -157,7 +157,7 @@ h1 {
 // Paths are relative to this page (assets/system/tools/).
 (() => {
   const TOOLS = [
-    { name: "Stickers",              href: "stickers.html",               desc: "Every sticker; click one to copy its quote code." },
+    { name: "Stickers",              href: "stickers.html",               desc: "Quote builder with live preview, plus every sticker's code." },
     { name: "Asset Images",          href: "asset-images.html",           desc: "Checks every asset icon in the sheet and zips the working ones." },
     { name: "DataURL Compressor",    href: "dataUrl-compresserTool.html", desc: "Shrinks images into data URLs." },
     { name: "jsDelivr → raw",        href: "delivrToRaw.html",            desc: "Turns jsDelivr links into raw.githubusercontent links." },
@@ -187,12 +187,30 @@ h1 {
   const user = (localStorage.getItem("ws_username") || "").replace(/^@/, "");
   document.getElementById("who").textContent = user ? `@${user}` : "no ticket";
 
+  // Why the check said no (devtools.js WS_Dev.reason()), in plain words.
+  const WHY = {
+    "no-ticket":          () => "This browser has no ticket.",
+    "no-username":        (r) => `Ticket <code>${esc(r.id)}</code> has no username saved in this browser, so it can't be matched to list.json.`,
+    "list-unreachable":   () => "Couldn't load tools/list.json.",
+    "not-listed":         (r) => `No entry in tools/list.json matches ticket <code>${esc(r.id)}</code> + username <code>${esc(r.user)}</code>.`,
+    "server-status":      (r) => `The server says ticket <code>${esc(r.id)}</code> is <b>${esc(r.status)}</b> with this browser's key.`,
+    "server-unreachable": () => "Couldn't reach the ticket server — try reloading.",
+  };
+  const lock = () => {
+    const r = window.WS_Dev?.reason?.();
+    gate.className = "gate";
+    gate.innerHTML = "🔒 This panel is only for the WannaSmile team." +
+      (r && WHY[r.code] ? `<br><small>${WHY[r.code](r)}</small>` : "");
+    gate.hidden = false;
+    document.getElementById("tools").hidden = true;
+    document.getElementById("pages").hidden = true;
+  };
+  // A remembered pass opens the panel at once; if the background re-check
+  // then says no, lock it again (devtools.js).
+  document.addEventListener("ws:dev-revoked", lock);
+
   (window.WS_Dev ? window.WS_Dev.check() : Promise.resolve(false)).then((ok) => {
-    if (!ok) {
-      gate.className = "gate";
-      gate.textContent = "🔒 This panel is only for the WannaSmile team.";
-      return;
-    }
+    if (!ok) { lock(); return; }
     gate.hidden = true;
     fill("toolGrid", TOOLS);
     fill("pageGrid", PAGES);

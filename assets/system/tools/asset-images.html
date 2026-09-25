@@ -113,9 +113,11 @@ td.url a { color: inherit; }
       Assets whose image is blank, 404s, or isn't really an image (the ones the site shows the fallback for) are
       <b>skipped</b> and listed below. Files keep their URL path as folders, e.g.
       <code>…github.io./library/friday-night-funkin/icon.png</code> → <code>friday-night-funkin/icon.png</code>.
+      <b>Check only</b> runs the same scan without building or downloading anything — just the lists below.
     </p>
     <div class="controls">
-      <button type="button" class="btn primary" id="runBtn">Scan &amp; build zip</button>
+      <button type="button" class="btn primary" id="checkBtn">Check only</button>
+      <button type="button" class="btn" id="runBtn">Scan &amp; build zip</button>
       <button type="button" class="btn" id="stopBtn" hidden>Stop</button>
       <button type="button" class="btn" id="dlBtn" hidden>Download zip again</button>
       <label class="check"><input type="checkbox" id="devbuild" /> Include DevBuild assets</label>
@@ -123,7 +125,7 @@ td.url a { color: inherit; }
     <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
     <div class="stats">
       <div class="stat"><b id="sTotal">0</b><span>images to check</span></div>
-      <div class="stat ok"><b id="sOk">0</b><span>zipped</span></div>
+      <div class="stat ok"><b id="sOk">0</b><span id="sOkLabel">zipped</span></div>
       <div class="stat miss"><b id="sMiss">0</b><span>missing</span></div>
       <div class="stat block"><b id="sBlock">0</b><span>blocked by host</span></div>
     </div>
@@ -136,9 +138,15 @@ td.url a { color: inherit; }
       <div class="controls" style="margin:0">
         <input class="filter" id="missFilter" type="search" placeholder="Filter by name or URL…" aria-label="Filter missing images" />
         <button type="button" class="btn" id="copyBtn">Copy names</button>
+        <button type="button" class="btn" id="copyR2Btn">Copy R2 upload list</button>
       </div>
     </div>
-    <p class="muted" style="margin-bottom:10px">These assets fall back to the placeholder on the site. Not in the zip.</p>
+    <p class="muted" style="margin-bottom:10px">
+      These assets fall back to the placeholder on the site. Not in the zip.
+      <b>Upload to R2 as</b> is the key to put the replacement at in the <code>ankomstudios</code> bucket, so it serves from
+      <code>https://raw.ankomstudios.com/&lt;key&gt;</code> — then paste that URL into the asset's <code>image</code> cell.
+      <b>Copy R2 upload list</b> copies every row (tab-separated, pastes straight into a sheet).
+    </p>
     <div id="missingList"></div>
   </section>
 
@@ -178,6 +186,7 @@ td.url a { color: inherit; }
     n.innerHTML = `🎟️ This tool reads the asset list, which needs an approved access ticket. Get yours on the <a href="../../../index.html">main page</a>, then come back.`;
     document.querySelector(".top").after(n);
     $("runBtn").disabled = true;
+    $("checkBtn").disabled = true;
   }
 
   // ── Zip paths ──────────────────────────────────────────────────────
@@ -208,6 +217,27 @@ td.url a { color: inherit; }
     let path = segs.join("/");
     if (!/\.[a-z0-9]{2,5}$/i.test(segs[segs.length - 1]) && EXT[type]) path += "." + EXT[type];
     return path;
+  }
+
+  // ── R2 upload keys ─────────────────────────────────────────────────
+  // Where a missing image's replacement should go in the ankomstudios R2
+  // bucket (served at https://raw.ankomstudios.com/<key>):
+  //   already on raw.ankomstudios.com   -> its own path (re-upload in place)
+  //   github.io / raw.githubusercontent -> same path zipPath() gives, e.g. fnf/icon.png
+  //   blank, embedded, external, broken -> <asset-name>/icon.png
+  const R2_BASE = "https://raw.ankomstudios.com/";
+  function r2Key(m) {
+    const fallback = `${slug(m.title)}/icon.png`;
+    if (!m.url || m.url.startsWith("data:")) return fallback;
+    let u;
+    try { u = new URL(m.url); } catch { return fallback; }
+    const host = u.hostname.replace(/\.$/, "").toLowerCase();
+    if (host === "raw.ankomstudios.com") return u.pathname.replace(/^\/+/, "") || fallback;
+    if (host.endsWith(".github.io") || host === "raw.githubusercontent.com") {
+      const p = zipPath(m.url, m.title, "image/png");
+      return p.includes("/") ? p : `${slug(m.title)}/${p}`;
+    }
+    return fallback;
   }
 
   // ── Checking one image ─────────────────────────────────────────────
@@ -265,8 +295,10 @@ td.url a { color: inherit; }
   const setStat = (id, n) => { $(id).textContent = n; };
   const status = (t) => { $("status").textContent = t; };
 
-  async function run() {
-    $("runBtn").disabled = true; $("stopBtn").hidden = false; $("dlBtn").hidden = true;
+  // zipIt = false is "Check only": same scan, nothing is kept or downloaded.
+  async function run(zipIt) {
+    $("runBtn").disabled = true; $("checkBtn").disabled = true; $("stopBtn").hidden = false; $("dlBtn").hidden = true;
+    $("sOkLabel").textContent = zipIt ? "zipped" : "load fine";
     $("missingPanel").hidden = true; $("blockedPanel").hidden = true;
     controller = new AbortController();
     const signal = controller.signal;
@@ -332,7 +364,7 @@ td.url a { color: inherit; }
             try { r = await check(url, signal); } catch { return; }
           }
           const users = byUrl.get(url);
-          if (r.state === "ok") { addFile(url, r.blob); ok++; }
+          if (r.state === "ok") { if (zipIt) addFile(url, r.blob); ok++; }
           else (r.state === "blocked" ? blocked : missing).push(...users.map(u => ({ ...u, url, why: r.why })));
           done++;
           setStat("sOk", ok); setStat("sMiss", missing.length); setStat("sBlock", blocked.length);
@@ -344,6 +376,10 @@ td.url a { color: inherit; }
 
       const stopped = signal.aborted;
       render(missing, blocked);
+      if (!zipIt) {
+        status(`${stopped ? "Stopped early. " : ""}Checked ${done} of ${urls.length}: ${ok} load fine, ${missing.length} missing, ${blocked.length} blocked.`);
+        return;
+      }
       if (!ok) { status(stopped ? "Stopped. Nothing was zipped yet." : "No images could be zipped."); return; }
 
       // A report inside the zip too.
@@ -364,7 +400,7 @@ td.url a { color: inherit; }
       console.error("[asset-images]", err);
       status(`❌ ${err.message}`);
     } finally {
-      $("runBtn").disabled = !hasTicket; $("stopBtn").hidden = true;
+      $("runBtn").disabled = !hasTicket; $("checkBtn").disabled = !hasTicket; $("stopBtn").hidden = true;
       controller = null;
     }
   }
@@ -380,19 +416,20 @@ td.url a { color: inherit; }
 
   // ── Lists ──────────────────────────────────────────────────────────
   let lastMissing = [];
-  function table(list, kind) {
+  const byTitle = (list) => [...list].sort((a, b) => String(a.title).localeCompare(String(b.title)));
+  function table(list, kind, withR2) {
     if (!list.length) return `<p class="empty">None 🎉</p>`;
-    const sorted = [...list].sort((a, b) => String(a.title).localeCompare(String(b.title)));
-    return `<table><thead><tr><th>Asset</th><th>Page</th><th>Why</th><th>Image URL</th></tr></thead><tbody>${
-      sorted.map(m => `<tr data-hay="${esc((m.title + " " + m.url).toLowerCase())}"><td>${esc(m.title)}</td><td>${esc(m.page)}</td><td><span class="why ${kind}">${esc(m.why)}</span></td><td class="url">${
-        !m.url ? "—" : m.url.startsWith("data:") ? "(embedded image)" : `<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.url)}</a>`}</td></tr>`).join("")
+    return `<table><thead><tr><th>Asset</th><th>Page</th><th>Why</th><th>Image URL</th>${withR2 ? "<th>Upload to R2 as</th>" : ""}</tr></thead><tbody>${
+      byTitle(list).map(m => `<tr data-hay="${esc((m.title + " " + m.url + (withR2 ? " " + r2Key(m) : "")).toLowerCase())}"><td>${esc(m.title)}</td><td>${esc(m.page)}</td><td><span class="why ${kind}">${esc(m.why)}</span></td><td class="url">${
+        !m.url ? "—" : m.url.startsWith("data:") ? "(embedded image)" : `<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.url)}</a>`}</td>${
+        withR2 ? `<td class="url"><code>${esc(r2Key(m))}</code></td>` : ""}</tr>`).join("")
     }</tbody></table>`;
   }
 
   function render(missing, blocked) {
     lastMissing = missing;
     $("missCount").textContent = `(${missing.length})`;
-    $("missingList").innerHTML = table(missing, "");
+    $("missingList").innerHTML = table(missing, "", true);
     $("missingPanel").hidden = false;
     $("blockCount").textContent = `(${blocked.length})`;
     $("blockedList").innerHTML = table(blocked, "block");
@@ -405,11 +442,19 @@ td.url a { color: inherit; }
     document.querySelectorAll("#missingList tbody tr").forEach(tr => { tr.hidden = !!q && !tr.dataset.hay.includes(q); });
   });
   $("copyBtn").addEventListener("click", async () => {
-    const text = [...lastMissing].sort((a, b) => String(a.title).localeCompare(String(b.title))).map(m => m.title).join("\n");
+    const text = byTitle(lastMissing).map(m => m.title).join("\n");
     try { await navigator.clipboard.writeText(text); window.showToast?.(`Copied ${lastMissing.length} names.`); }
     catch { window.showToast?.("Couldn't copy — select the table instead."); }
   });
-  $("runBtn").addEventListener("click", run);
+  $("copyR2Btn").addEventListener("click", async () => {
+    const cell = (s) => String(s ?? "").replace(/[\t\r\n]+/g, " ");
+    const rows = byTitle(lastMissing).map(m => [m.title, m.page, m.why, m.url.startsWith("data:") ? "(embedded image)" : m.url, r2Key(m), R2_BASE + r2Key(m)].map(cell).join("\t"));
+    const text = ["Asset\tPage\tWhy\tOld image URL\tR2 key\tNew image URL", ...rows].join("\n");
+    try { await navigator.clipboard.writeText(text); window.showToast?.(`Copied ${rows.length} rows for R2.`); }
+    catch { window.showToast?.("Couldn't copy — select the table instead."); }
+  });
+  $("runBtn").addEventListener("click", () => run(true));
+  $("checkBtn").addEventListener("click", () => run(false));
   $("stopBtn").addEventListener("click", () => controller?.abort());
   $("dlBtn").addEventListener("click", download);
 })();

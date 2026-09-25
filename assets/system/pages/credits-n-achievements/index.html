@@ -76,15 +76,6 @@ h1 {
 
 /* Balance */
 .balance { display: flex; align-items: center; gap: clamp(14px, 2.6vh, 28px); flex-wrap: wrap; }
-.coin {
-  width: clamp(64px, 10vh, 96px); height: clamp(64px, 10vh, 96px);
-  flex: none;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  font-size: clamp(30px, 5vh, 48px);
-  background: radial-gradient(circle at 35% 30%, #fff6b0, #ffc93c 55%, #d18a00);
-  box-shadow: 0 0 0 4px var(--accent-color, #f44), 0 6px 0 rgba(0,0,0,0.45);
-}
 .amount { font-size: clamp(34px, 6vh, 60px); font-weight: bold; line-height: 1; }
 .amount small { font-size: 0.35em; opacity: 0.75; margin-left: 6px; }
 
@@ -154,7 +145,6 @@ h1 {
   <section class="panel" aria-labelledby="balTitle">
     <h2 id="balTitle">Your credits</h2>
     <div class="balance">
-      <div class="coin" aria-hidden="true">🪙</div>
       <div>
         <div class="amount"><span id="balance">0</span><small>credits</small></div>
         <p class="muted" style="margin-top:8px;max-width:560px">Credits unlock content <b>early</b>, before it's fully released. You earn them from achievements. They're saved in this browser with the rest of your data, so export it (footer → Export Data) to keep them safe.</p>

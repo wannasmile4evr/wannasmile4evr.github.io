@@ -308,6 +308,8 @@ kbd {
   <nav class="tabs" aria-label="Settings sections">
     <a href="#paging">📄 Paging</a>
     <a href="#behaviour">🧭 Page behaviour</a>
+    <a href="#quotes">💬 Quotes</a>
+    <a href="#bundles">🃏 Bundles</a>
   </nav>
 
   <section class="panel" id="paging" aria-labelledby="pagingTitle">
@@ -328,6 +330,26 @@ kbd {
     <div class="grid" id="behaviourGrid"></div>
     <div class="foot"><button type="button" class="btn" id="resetBtn">↺ Reset to defaults</button></div>
   </section>
+
+  <section class="panel" id="quotes" aria-labelledby="quotesTitle">
+    <div class="panel-head">
+      <h2 id="quotesTitle"><span class="emoji" aria-hidden="true">💬</span>Quotes</h2>
+      <span class="picked" id="quotesSummary"></span>
+    </div>
+    <p class="tip">How the quote bar under the header behaves. The Qtype button next to it switches between scrolling left, scrolling right and a still quote that stays centred. <b>Click a card anywhere</b> to flip it. Any open WannaSmile tab switches over straight away.</p>
+    <div class="grid" id="quoteGrid"></div>
+    <div class="foot"><button type="button" class="btn" id="quoteResetBtn">↺ Reset quote settings</button></div>
+  </section>
+
+  <section class="panel" id="bundles" aria-labelledby="bundlesTitle">
+    <div class="panel-head">
+      <h2 id="bundlesTitle"><span class="emoji" aria-hidden="true">🃏</span>Bundles</h2>
+      <span class="picked" id="bundlesSummary"></span>
+    </div>
+    <p class="tip">Bundles are one card holding several versions of an asset (beta, v2, copies). The other versions fan out behind the front card like a hand of cards: <b>click</b> one peeking out, or <b>Shift+click</b> the card, to bring the next one up. <b>Click a card anywhere</b> below to flip it. Saved straight away and any open WannaSmile tab switches over.</p>
+    <div class="grid" id="bundleGrid"></div>
+    <div class="foot"><button type="button" class="btn" id="bundleResetBtn">↺ Reset bundle settings</button></div>
+  </section>
 </div>
 
 <script src="../js/endpoints.js"></script>
@@ -336,13 +358,18 @@ kbd {
 <script src="../js/themify.js"></script>
 <script src="../js/datacache.js"></script>
 <script src="../js/paging.js"></script>
+<script src="../js/quotes.js"></script>
 <script>
 "use strict";
 // ── Settings ───────────────────────────────────────────────────────────
-// Everything here is read and written through WS_Paging (paging.js), which
-// the main site listens to, so an open WannaSmile tab updates on the spot.
+// Everything here is read and written through WS_Paging (paging.js), or for
+// the Quotes and Bundles sections WS_QuoteSettings (quotes.js) and
+// WS_BundleSettings (paging.js). The main site listens to all three, so an
+// open WannaSmile tab updates on the spot.
 (() => {
   const P = window.WS_Paging;
+  const QS = window.WS_QuoteSettings;
+  const BS = window.WS_BundleSettings;
   const $ = (id) => document.getElementById(id);
   const toast = (msg) => window.showToast?.(msg, 2200);
 
@@ -377,6 +404,21 @@ kbd {
       options: [[false, "Off"], [true, "On"]] },
   ];
 
+  // Quote bar settings (quotes.js). Their own store, so flipping one never
+  // re-sorts the library the way a paging change does.
+  const QUOTE_SWITCHES = [
+    { key: "keepOnSwitch", name: "Keep quote on Qtype switch", store: QS, pagelessOk: true,
+      desc: "Off: every Qtype switch shows a different quote. On: the quote you're reading stays and just changes direction, or stops in the middle, or starts scrolling from where it sat. A quote that's fully off screen when you switch is swapped for a new one either way.",
+      options: [[false, "Off"], [true, "On"]] },
+  ];
+  // Bundle card looks (main.js). Also its own store: a look-only change.
+  const BUNDLE_SWITCHES = [
+    { key: "tilt", name: "Deck tilt", store: BS, pagelessOk: true, emoji: "🃏",
+      desc: "Which way the other versions fan out behind a bundle's front card. The shuffle animation follows the same side.",
+      options: [["right", "Right"], ["left", "Left"]] },
+  ];
+  const storeOf = (sw) => sw.store || P;
+
   // The data cache card's status line: how much is saved, and from when.
   async function cacheStatus() {
     const C = window.WS_DataCache;
@@ -390,7 +432,7 @@ kbd {
     return `Saved: ${kb} KB (${feeds.join(", ")})${when ? `, library from ${when}` : ""}.`;
   }
 
-  const isDefault = (s, k) => s[k] === P.DEFAULTS[k];
+  const isDefault = (sw, s) => s[sw.key] === storeOf(sw).DEFAULTS[sw.key];
   const label = (sw, v) => sw.options.find(([val]) => val === v)?.[1] || String(v);
   // "All pages (global)" -> "all pages", for summaries and toasts.
   const short = (text) => text.replace(/ \(.*\)/, "").toLowerCase();
@@ -483,7 +525,8 @@ kbd {
     return { opt, card, btn, subBtns, tag: card.querySelector(".tag") };
   });
 
-  const switchCards = SWITCHES.map((sw, i) => {
+  function makeSwitchCard(sw, i, grid) {
+    const store = storeOf(sw);
     const card = document.createElement("article");
     card.className = "item";
     card.style.setProperty("--i", i);
@@ -501,10 +544,10 @@ kbd {
     seg.setAttribute("aria-label", sw.name);
     const replay = (cls) => { card.classList.remove(cls); void card.offsetWidth; card.classList.add(cls); };
     const choose = (val, text) => {
-      if (P.get()[sw.key] === val) return;
-      P.set(sw.key, val);
+      if (store.get()[sw.key] === val) return;
+      store.set(sw.key, val);
       replay("flip");
-      toast(`🧭 ${sw.name}: ${text}`);
+      toast(`${sw.emoji || (store === P ? "🧭" : "💬")} ${sw.name}: ${text}`);
     };
     const btns = sw.options.map(([val, text]) => {
       const b = document.createElement("button");
@@ -528,7 +571,7 @@ kbd {
         toast("Switched off while paging is pageless.");
         return;
       }
-      const cur = P.get()[sw.key];
+      const cur = store.get()[sw.key];
       const [val, text] = sw.options.find(([v]) => v !== cur);
       choose(val, text);
     };
@@ -541,10 +584,15 @@ kbd {
       e.preventDefault();
       flip();
     });
-    $("behaviourGrid").appendChild(card);
+    grid.appendChild(card);
     return { sw, card, btns,
       def: card.querySelector(".tag.alt"), off: card.querySelector(".tag:not(.alt)"), note: card.querySelector(".item-note") };
-  });
+  }
+  const switchCards = [
+    ...SWITCHES.map((sw, i) => makeSwitchCard(sw, i, $("behaviourGrid"))),
+    ...QUOTE_SWITCHES.map((sw, i) => makeSwitchCard(sw, i, $("quoteGrid"))),
+    ...BUNDLE_SWITCHES.map((sw, i) => makeSwitchCard(sw, i, $("bundleGrid"))),
+  ];
 
   // ── Paint ────────────────────────────────────────────────────────────
   function paint() {
@@ -567,14 +615,16 @@ kbd {
       });
     });
 
+    const qs = QS.get();
     switchCards.forEach(({ sw, card, btns, def, off, note }) => {
+      const st = storeOf(sw) === P ? s : storeOf(sw) === QS ? qs : storeOf(sw).get();
       const locked = pageless && !sw.pagelessOk;
       card.classList.toggle("is-off", locked);
       off.hidden = !locked;
       note.hidden = !locked;
-      def.hidden = locked || !isDefault(s, sw.key);
+      def.hidden = locked || !isDefault(sw, st);
       btns.forEach(({ val, b }) => {
-        const on = s[sw.key] === val;
+        const on = st[sw.key] === val;
         b.classList.toggle("is-on", on);
         b.setAttribute("aria-pressed", String(on));
         b.setAttribute("aria-disabled", String(locked));
@@ -591,16 +641,33 @@ kbd {
       .filter((sw) => !pageless || sw.pagelessOk)
       .map((sw) => `${sw.name.toLowerCase()} <b>${short(label(sw, s[sw.key]))}</b>`)
       .join(" · ") + (pageless ? " · paging options off while pageless" : "");
+    $("quotesSummary").innerHTML = QUOTE_SWITCHES
+      .map((sw) => `${sw.name.toLowerCase()} <b>${short(label(sw, qs[sw.key]))}</b>`)
+      .join(" · ");
+    const bs = BS.get();
+    $("bundlesSummary").innerHTML = BUNDLE_SWITCHES
+      .map((sw) => `${sw.name.toLowerCase()} <b>${short(label(sw, bs[sw.key]))}</b>`)
+      .join(" · ");
   }
 
   $("resetBtn").addEventListener("click", () => {
     P.reset();
     toast("↺ Settings back to defaults");
   });
+  $("quoteResetBtn").addEventListener("click", () => {
+    QS.reset();
+    toast("↺ Quote settings back to defaults");
+  });
+  $("bundleResetBtn").addEventListener("click", () => {
+    BS.reset();
+    toast("↺ Bundle settings back to defaults");
+  });
 
   // paging.js fires this for changes made here and in other tabs. The
   // cache status also follows copies saved by an open WannaSmile tab.
   document.addEventListener("ws:paging-changed", paint);
+  document.addEventListener("ws:quote-settings-changed", paint);
+  document.addEventListener("ws:bundle-settings-changed", paint);
   document.addEventListener("ws:data-cache-change", paint);
   window.addEventListener("storage", (e) => { if (e.key === null || e.key.startsWith("ws_cache_")) paint(); });
   paint();
