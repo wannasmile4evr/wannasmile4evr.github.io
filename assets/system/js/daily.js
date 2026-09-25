@@ -140,7 +140,7 @@
 
   function randomSticker() {
     const man  = window.stickerManifest;
-    const base = window.stickerBasePath || "assets/media/stickers/";
+    const base = window.stickerBasePath || "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/stickers/";
     if (!man) return null;
     const keys = Object.keys(man);
     return keys.length ? base + man[keys[Math.floor(Math.random() * keys.length)]] : null;

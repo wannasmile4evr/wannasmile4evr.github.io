@@ -27,7 +27,7 @@ html {
   overflow-x: hidden;
 }
 /* The active theme's background didn't load (themify.js): local Redux copy. */
-html.ws-bg-fallback { background-image: url("../../media/themes/redux/system-media/mainBg.png"); }
+html.ws-bg-fallback { background-image: url("https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/system-media/mainBg.png"); }
 body {
   min-height: 100vh;
   /* clip (unlike hidden) cuts off anything wider than the page without
@@ -258,6 +258,38 @@ kbd {
 .gifbox img.pixelated { image-rendering: pixelated; height: 84px; width: auto; }
 .gifbox .none { font-size: 2rem; opacity: 0.5; }
 
+/* Cursor pack preview: every cursor in the pack, labelled, on a light
+   chip so dark line art stays visible whatever the theme. */
+.cursorbox {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 2px dashed rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.35);
+}
+.cursorbox figure { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.cursorbox .chip {
+  width: 100%;
+  max-width: 44px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.88);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.45);
+  transition: transform 0.2s ease;
+}
+.cursorbox figure:nth-child(odd) .chip { transform: rotate(-4deg); }
+.cursorbox figure:nth-child(even) .chip { transform: rotate(3deg); }
+.item:hover .cursorbox .chip { transform: scale(1.1); }
+.cursorbox img { width: 72%; height: 72%; object-fit: contain; }
+.cursorbox figcaption { font-size: 0.65rem; opacity: 0.8; }
+
+/* On/off switch in the Cursors panel header. */
+.btn.switch { flex: none; }
+
 /* ── Buttons ── */
 .btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn {
@@ -333,6 +365,7 @@ kbd {
     <a href="#widgets">🫧 Widgets <span class="count" id="countWidgets">0</span></a>
     <a href="#themes">🎨 Themes <span class="count" id="countThemes">0/9</span></a>
     <a href="#gifpacks">🌀 Gif packs <span class="count" id="countGifpacks">0</span></a>
+    <a href="#cursors">🖱️ Cursors <span class="count" id="countCursors">off</span></a>
   </nav>
 
   <section class="panel" id="widgets" aria-labelledby="widgetsTitle">
@@ -361,12 +394,22 @@ kbd {
     <p class="tip">Gif packs are the loading, searching and crash animations. They're separate from themes, so mix and match freely. Add as many as you like to the cycle and press <kbd>[</kbd> / <kbd>]</kbd> on the main site to swap between them. <b>Activate</b> puts one in use right now. Hover a card to see it search.</p>
     <div class="grid" id="gifpackGrid"></div>
   </section>
+
+  <section class="panel" id="cursors" aria-labelledby="cursorsTitle">
+    <div class="panel-head">
+      <h2 id="cursorsTitle"><span class="emoji" aria-hidden="true">🖱️</span>Cursors</h2>
+      <button type="button" class="btn switch" id="cursorSwitch"></button>
+    </div>
+    <p class="tip">Custom cursors swap your mouse pointer for a hand-drawn set, everywhere on WannaSmile. They're off until you turn them on. <b>Activate</b> a pack to switch it on and use it right away. Text boxes keep the normal typing cursor.</p>
+    <div class="grid" id="cursorGrid"></div>
+  </section>
 </div>
 
 <script src="../js/endpoints.js"></script>
 <script src="../js/utils.js"></script>
 <script src="../js/ticket.js"></script>
 <script src="../js/themify.js"></script>
+<script src="../js/cursors.js"></script>
 <script>
 "use strict";
 // ── Store ──────────────────────────────────────────────────────────────
@@ -379,6 +422,8 @@ kbd {
 //   ws_theme_cache        { id: row } for instant paint   -> themify.js
 //   ws_selected_gifpacks  gif pack cycle order ([ / ])    -> ui.js
 //   ws_active_gifpack     the active gif pack             -> themify.js
+//   ws_cursors_enabled    custom cursors on ("true")      -> cursors.js
+//   ws_active_cursor      the active cursor pack          -> cursors.js
 (() => {
   // Widgets, themes and gif packs all come from the CUST project (endpoints.js).
   const CUST_URL = window.WS_ENDPOINTS.cust;
@@ -628,8 +673,8 @@ kbd {
   }
 
   // ── Gif packs ────────────────────────────────────────────────────────
-  // Every pack lives at assets/media/themes/<id>/gif-states/<state>.gif.
-  const GIF_BASE = new URL("../../media/themes/", location.href);
+  // Every pack lives at wannabase themes/<id>/gif-states/<state>.gif.
+  const GIF_BASE = "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/";
   const gifCards = [];
 
   function paintGifPacks() {
@@ -704,6 +749,85 @@ kbd {
     paintGifPacks();
   }
 
+  // ── Cursors ──────────────────────────────────────────────────────────
+  // Packs are local (cursors.js lists them), so no fetch or ticket needed.
+  const CURSOR_ON_KEY     = "ws_cursors_enabled";
+  const CURSOR_ACTIVE_KEY = "ws_active_cursor";
+  const CURSOR_LABELS     = { normal: "normal", point: "point", click: "click", grab: "grab", deny: "nope" };
+  const cursorCards = [];
+
+  function paintCursors() {
+    const C = window.WSCursors;
+    if (!C) return;
+    const on = C.isEnabled(), active = C.getActive();
+    const sw = $("cursorSwitch");
+    setBtn(sw, on, "✓ Custom cursors on", "Custom cursors off");
+    $("countCursors").textContent = on ? "on" : "off";
+    cursorCards.forEach(({ id, card, tag, activeBtn }) => {
+      const isActive = on && active === id;
+      setBtn(activeBtn, isActive, "★ Active", "Activate");
+      card.classList.toggle("is-on", isActive);
+      tag.hidden = !isActive;
+    });
+  }
+
+  function renderCursors() {
+    const grid = $("cursorGrid");
+    const C = window.WSCursors;
+    if (!C) return message(grid, "Cursors couldn't load. Try refreshing.", true);
+    const packs = C.list();
+    if (!packs.length) return message(grid, "No cursor packs yet. Check back soon!");
+    grid.replaceChildren();
+
+    packs.forEach(({ id, name }, i) => {
+      const card = makeCard(i);
+      card.innerHTML = `
+        <span class="tag" hidden>Active</span>
+        <div class="cursorbox"></div>
+        <div class="item-name"></div>
+        <div class="btns"></div>`;
+      card.querySelector(".item-name").textContent = name;
+
+      const box = card.querySelector(".cursorbox");
+      C.states.forEach((state) => {
+        const fig = document.createElement("figure");
+        fig.innerHTML = `<span class="chip"><img alt="" decoding="async" /></span><figcaption></figcaption>`;
+        fig.querySelector("img").alt = `${name} ${CURSOR_LABELS[state]} cursor`;
+        fig.querySelector("figcaption").textContent = CURSOR_LABELS[state];
+        box.appendChild(fig);
+      });
+      C.preview(id).then((urls) => {
+        box.querySelectorAll("img").forEach((img, n) => { img.src = urls[C.states[n]]; });
+      });
+
+      const activeBtn = makeBtn("");
+      activeBtn.addEventListener("click", () => {
+        if (C.isEnabled() && C.getActive() === id) {
+          C.setEnabled(false);
+          toast("🖱️ Custom cursors off");
+        } else {
+          C.setActive(id);
+          C.setEnabled(true);
+          toast(`🖱️ ${name} cursors are on`);
+        }
+        paintCursors();
+      });
+      card.querySelector(".btns").append(activeBtn);
+      cursorCards.push({ id, card, tag: card.querySelector(".tag"), activeBtn });
+      grid.appendChild(card);
+    });
+    paintCursors();
+  }
+
+  $("cursorSwitch").addEventListener("click", () => {
+    const C = window.WSCursors;
+    if (!C) return;
+    const on = !C.isEnabled();
+    C.setEnabled(on);
+    paintCursors();
+    toast(on ? `🖱️ ${C.getName(C.getActive())} cursors are on` : "🖱️ Custom cursors off");
+  });
+
   // ── Load ─────────────────────────────────────────────────────────────
   function load(type, gridId, render, what) {
     const grid = $(gridId);
@@ -719,6 +843,7 @@ kbd {
   load("widgets",  "widgetGrid",  renderWidgets,  "widgets");
   load("themes",   "themeGrid",   renderThemes,   "themes");
   load("gifpacks", "gifpackGrid", renderGifPacks, "gif packs");
+  renderCursors();
   updateCounts();
 
   // Highlight the tab for the section in view.
@@ -733,8 +858,8 @@ kbd {
 
   // Picks made in another tab (or the main site) show up here too.
   window.addEventListener("storage", (e) => {
-    if (![WIDGET_SEL_KEY, THEME_SEL_KEY, THEME_ACTIVE, GIF_SEL_KEY, GIF_ACTIVE].includes(e.key)) return;
-    updateCounts(); paintWidgets(); paintThemes(); paintGifPacks();
+    if (![WIDGET_SEL_KEY, THEME_SEL_KEY, THEME_ACTIVE, GIF_SEL_KEY, GIF_ACTIVE, CURSOR_ON_KEY, CURSOR_ACTIVE_KEY].includes(e.key)) return;
+    updateCounts(); paintWidgets(); paintThemes(); paintGifPacks(); paintCursors();
   });
 })();
 </script>

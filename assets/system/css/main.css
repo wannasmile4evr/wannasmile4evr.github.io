@@ -29,7 +29,7 @@ html {
 /* The active theme's background didn't load (themify.js's _checkMainBg):
    fall back to the local copy of Redux's. */
 html.ws-bg-fallback {
-  background-image: url("../../media/themes/redux/system-media/mainBg.png");
+  background-image: url("https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/system-media/mainBg.png");
 }
 
 body {

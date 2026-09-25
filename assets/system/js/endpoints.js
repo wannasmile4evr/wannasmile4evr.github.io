@@ -19,3 +19,33 @@ window.WS_ENDPOINTS = Object.freeze({
   cust: "https://script.google.com/macros/s/AKfycby9ldspfVFZxwR9BxTbh_niAjBhoL0Q8T8V1pN2m85S5NB4EMb84N08YhSlhYsM2TtZ/exec",
   mod:  "https://script.google.com/macros/s/AKfycbyorR1RSI3-aYv91IIobUxMmNv8HKMyYvNKhwgR27AXetGROjkE_eYgBNyW5hwyPh_w/exec",
 });
+
+// ── General media (wannabase) ──────────────────────────────────────────
+// Banners, profile pics, stickers and theme art live in their own repo,
+// github.com/wannasmile4evr/wannabase, not in this site:
+//
+//   assets/media/banners/         -> banners/
+//   assets/media/images/profile/  -> profile/
+//   assets/media/stickers/        -> stickers/
+//   assets/media/themes/          -> themes/
+//
+// The code points there directly, but sheet rows and caches saved in
+// visitors' browsers can still hold the old in-site paths (…github.io./
+// assets/media/…, "site:assets/media/…", ../../media/…). toWannabase() turns
+// any of those into the wannabase URL and leaves every other value alone.
+window.WS_WANNABASE = "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/";
+
+window.toWannabase = (() => {
+  const host = location.host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const moved = new RegExp(
+    String.raw`^(?:site:|(?:https?:)?//(?:wannasmile4evr\.github\.io\.?${host ? "|" + host : ""})/(?:[^?#]*?/)?|/|(?:\.\.?/)*)` +
+    String.raw`(?:assets/)?media/(banners|stickers|themes|images/profile)/`, "i");
+  return (url) => {
+    if (typeof url !== "string") return url;
+    const v = url.trim();
+    const m = v.match(moved);
+    if (!m) return url;
+    const dir = m[1].toLowerCase() === "images/profile" ? "profile" : m[1].toLowerCase();
+    return window.WS_WANNABASE + dir + "/" + v.slice(m[0].length);
+  };
+})();

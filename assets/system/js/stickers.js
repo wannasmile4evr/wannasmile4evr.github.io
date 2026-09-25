@@ -1,7 +1,7 @@
 "use strict";
 
 // ── Stickers ───────────────────────────────────────────────────────────
-// Every sticker lives at assets/media/stickers/<pack>/<file>. This list is
+// Every sticker lives at wannabase stickers/<pack>/<file>. This list is
 // shared by the quote box (quotes.js), the pop-ups that slap a random
 // sticker on their corner (daily picks, shortcuts, tutorial) and the
 // sticker picker tool (tools/stickers.html).
@@ -71,9 +71,9 @@
     "scarleteat": "scarlet-pack/scarletEat.jpg",
   };
 
-  // Resolved from this script's own URL, so it works from the site root,
-  // pages/ and tools/ alike.
-  window.stickerBasePath = new URL("../../media/stickers/", document.currentScript?.src || location.href).href;
+  // Stickers live in the wannabase repo (endpoints.js), so this is the same
+  // absolute URL from every page.
+  window.stickerBasePath = "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/stickers/";
 
   // Lower-cased "pack/file", "pack/name" and "name" → the real "pack/file".
   const lookup = new Map();

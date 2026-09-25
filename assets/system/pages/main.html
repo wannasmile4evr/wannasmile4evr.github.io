@@ -29,10 +29,10 @@
 // a first-ever visit, when nothing has been cached yet.
 (function () {
   var FALLBACK = [
-    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/headerBg.png",
-    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/quoteBg.png",
-    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/mainBg.png",
-    "https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/footerBg.png"
+    "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/system-media/headerBg.png",
+    "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/system-media/quoteBg.png",
+    "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/system-media/mainBg.png",
+    "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/system-media/footerBg.png"
   ];
 
   function isPreloadableImage(v) {
@@ -52,7 +52,7 @@
     var link = document.createElement("link");
     link.rel  = "preload";
     link.as   = "image";
-    link.href = href;
+    link.href = window.toWannabase(href);
     document.head.appendChild(link);
   });
 })();
@@ -62,7 +62,7 @@
 // pack the user actually has active instead of always fetching redux's and
 // letting it sit there until the real one swaps in.
 (function () {
-  var FALLBACK = ["assets/media/themes/redux/gif-states/loading.gif", "assets/media/themes/redux/gif-states/loaded.gif"];
+  var FALLBACK = ["https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/gif-states/loading.gif", "https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/gif-states/loaded.gif"];
 
   var urls = null;
   try {
@@ -81,7 +81,7 @@
     var link = document.createElement("link");
     link.rel  = "preload";
     link.as   = "image";
-    link.href = href;
+    link.href = window.toWannabase(href);
     document.head.appendChild(link);
   });
 })();
@@ -175,7 +175,7 @@
 </aside>
 
 <div id="containerLoader">
-  <img src="../../media/themes/redux/gif-states/loading.gif" alt="loading..." />
+  <img src="https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/gif-states/loading.gif" alt="loading..." />
 </div>
 
 <main>
@@ -309,6 +309,7 @@
 <script src="../js/paging.js"></script>
 <script src="../js/ticket.js"></script>
 <script src="../js/themify.js"></script>
+<script src="../js/cursors.js"></script>
 <script src="../js/sanitizer.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <script src="../js/profile.js"></script>

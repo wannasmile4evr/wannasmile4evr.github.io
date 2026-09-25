@@ -1867,7 +1867,7 @@ window.addEventListener("load", () => {
 
       const star = document.createElement("button");
       star.className = "favorite-star";
-      star.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:16px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      star.style.cssText = "background:transparent!important;border:none!important;cursor:pointer;padding:2px 3px!important;font-size:16px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
       const paintStar = (on) => {
         star.innerHTML = `<i class="${on ? "fa-solid" : "fa-regular"} fa-star" aria-hidden="true"></i>`;
         star.title = on ? "Remove from favorites" : "Add to favorites";
@@ -1888,7 +1888,7 @@ window.addEventListener("load", () => {
       dlBtn.className = "asset-download-btn";
       dlBtn.title     = `Download "${title || "asset"}" as HTML`;
       dlBtn.innerHTML = `<i class="fa-solid fa-download" aria-hidden="true"></i>`;
-      dlBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      dlBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
       dlBtn.addEventListener("click", async (e) => {
         e.preventDefault(); e.stopPropagation();
         try {
@@ -1952,7 +1952,7 @@ window.addEventListener("load", () => {
       const descBtn = document.createElement("button");
       descBtn.className = "asset-action-btn asset-desc-btn";
       descBtn.innerHTML = `<i class="fa-solid fa-circle-question" aria-hidden="true"></i>`;
-      descBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      descBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
       descBtn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
 
       // Panel is only built the first time someone hovers the button, so a
@@ -1997,7 +1997,7 @@ window.addEventListener("load", () => {
       bugBtn.className = "asset-action-btn asset-bug-btn";
       bugBtn.title     = `Report "${title || "this asset"}"?`;
       bugBtn.innerHTML = `<i class="fa-solid fa-biohazard" aria-hidden="true"></i>`;
-      bugBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer!important;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
+      bugBtn.style.cssText = "background:transparent!important;border:none!important;cursor:pointer;padding:2px 3px!important;font-size:14px!important;line-height:1!important;color:var(--trench-color,#000)!important;display:inline-flex!important;align-items:center!important;";
       bugBtn.setAttribute("aria-haspopup", "true");
       bugBtn.setAttribute("aria-expanded", "false");
 

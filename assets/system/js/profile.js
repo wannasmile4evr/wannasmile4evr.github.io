@@ -6,14 +6,13 @@ const PROFILE_IMAGES = [
 ].map(n =>
   `https://cdn.jsdelivr.net/gh/mcmattyobriore/yogurtyooo.github.io@main/system/images/profile/${n}.${n === "smile" ? "png" : "jpeg"}`
 ).concat(
-  // Halloween set, shipped with the site. Resolved against this script's own
-  // URL so the paths work from mydex.html and assets/system/pages/ alike.
+  // Halloween set, hosted in the wannabase repo (see endpoints.js).
   // The Left/Right pairs are matching pfps: one half each for two friends.
   [
     "skele.jpg",
     "pumpkinPalLeft.gif", "pumpkinPalRight.gif",
     "trickOrTreatLeft.gif", "trickOrTreatRight.gif",
-  ].map(f => new URL(`../../media/images/profile/halloween/${f}`, document.currentScript?.src || location.href).href)
+  ].map(f => `https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/profile/halloween/${f}`)
 );
 
 const DEFAULT_PIC = "https://raw.githubusercontent.com/bguhm/bguhm.github.io/main/system/images/profile.png";
@@ -94,6 +93,10 @@ const BANNER_CACHE_KEY = "ws_banner_cache";   // last good BannerWS feed, for an
 
 function bannerUrl(src) {
   if (!src) return "";
+  // Gallery banners moved to the wannabase repo (endpoints.js); saved picks
+  // and BannerWS rows still say "site:assets/media/banners/…".
+  const moved = window.toWannabase(src);
+  if (moved !== src) return moved;
   if (src.startsWith(BANNER_SITE)) return new URL(src.slice(BANNER_SITE.length), SITE_ROOT).href;
   return new URL(src, location.href).href;
 }
@@ -414,7 +417,7 @@ function renderBannerGrid(list, message) {
   [saved, _pending.banner].filter((b, i, a) => b && !b.startsWith(BANNER_SITE) && a.indexOf(b) === i)
     .forEach(src => tiles.push(makeTile({ value: src, img: bannerUrl(src), label: "Yours", index: tiles.length, onPick: () => pickBanner(src) })));
   list.forEach(b => tiles.push(makeTile({
-    value: b.value, img: new URL(b.thumb || b.src, SITE_ROOT).href, label: b.name || b.id,
+    value: b.value, img: bannerUrl(BANNER_SITE + (b.thumb || b.src)), label: b.name || b.id,
     tag: b.animated ? "GIF" : "", pixelated: b.pixelated, index: tiles.length,
     onPick: () => pickBanner(b.value),
   })));

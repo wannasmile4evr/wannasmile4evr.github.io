@@ -18,3 +18,8 @@ description.txt
 # Staged icons waiting to go up to the R2 bucket (icons3/, icons4/, …): the
 # site shows them only when run locally, so they never get published.
 /icons[0-9]*/
+
+# General media (banners, profile, stickers, themes) lives in its own repo,
+# github.com/wannasmile4evr/wannabase, served from raw.githubusercontent.com
+# (see assets/system/js/endpoints.js). This is just the local working copy.
+/wannabase/

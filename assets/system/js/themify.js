@@ -56,7 +56,7 @@ const _ROOT_CSS = `:root {
   --header-bg: url("https://raw.githubusercontent.com/01110010-00110101/themeify/main/redux/Redux-headerbg.png");
   --quote-bg: url("https://raw.githubusercontent.com/01110010-00110101/themeify/main/redux/Redux-quotebg.png");
   --main-bg: url("https://raw.githubusercontent.com/01110010-00110101/themeify/main/redux/Redux-mainbg.png");
-  --footer-bg: url("https://wannasmile4evr.github.io./assets/media/themes/redux/system-media/footerBg.png");
+  --footer-bg: url("https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/redux/system-media/footerBg.png");
   --aside-bg: rgba(0, 0, 0, 0.95);
   --text-color: #000;
   --url-color: #fff;
@@ -349,7 +349,7 @@ function applyTheme(id) {
 //
 // Data comes from GifPacksWS (?type=gifpacks) — deliberately minimal there:
 // no `src` column, just "width|height|pixelated" per state cell, since every
-// pack already lives at a predictable assets/media/themes/${id}/gif-states/${state}.gif
+// pack already lives at a predictable wannabase themes/${id}/gif-states/${state}.gif
 // path. Parsed into the same {id, name, states} shape used everywhere below.
 const _GIFPACK_SHEETS_URL = `${window.WS_ENDPOINTS.cust}?type=gifpacks`;   // endpoints.js
 
@@ -400,7 +400,7 @@ function _parseGifPackRow(row) {
     if (!Number.isFinite(width) || !Number.isFinite(height)) return;
 
     states[key] = {
-      src: `assets/media/themes/${id}/gif-states/${key}.gif`,
+      src: `https://raw.githubusercontent.com/wannasmile4evr/wannabase/main/themes/${id}/gif-states/${key}.gif`,
       width,
       height,
       pixelated: (pixRaw || "").toLowerCase() !== "false",
@@ -477,7 +477,8 @@ function getThemeGif(theme, key) {
     || (packs[DEFAULT_GIF_PACK] || {}).states?.[key]
     || null;
   return {
-    src:       chosen ? chosen.src : "",
+    // toWannabase: packs cached before the move still hold assets/media/… paths.
+    src:       chosen ? window.toWannabase(chosen.src) : "",
     w:         chosen ? chosen.width  : DEFAULT_GIF_SIZE,
     h:         chosen ? chosen.height : DEFAULT_GIF_SIZE,
     pixelated: chosen ? chosen.pixelated !== false : true,
@@ -561,7 +562,9 @@ async function _normalizeSheetVal(raw) {
   const v = (raw || "").toString().trim();
   if (!v) return "";
   const decoded = await _maybeDecode(v);
-  return _normalizeBgValue(_localizeSiteUrl(decoded));
+  // Theme art moved to the wannabase repo; rows still pointing at the old
+  // …/assets/media/themes/… URLs are sent there (endpoints.js).
+  return _normalizeBgValue(_localizeSiteUrl(window.toWannabase(decoded)));
 }
 
 // A theme's accent colour -> the opposite hue, fully saturated and bright:
