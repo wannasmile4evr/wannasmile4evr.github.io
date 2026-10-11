@@ -611,7 +611,7 @@ window.addEventListener("load", () => {
     return out;
   };
 
-  const _MOVE_TO_TYPE = ["shiny", "disco", "animated", "grail"];
+  const _MOVE_TO_TYPE = ["shiny", "disco", "animated", "grail", "qwerty"];
   // type values (spaces, dashes and underscores ignored) that mark an
   // asset as early access: "early access", "early-access", "tester", …
   const _EARLY_ACCESS_TYPES = new Set(["earlyaccess", "tester", "testers"]);
