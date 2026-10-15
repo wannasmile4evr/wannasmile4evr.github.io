@@ -196,3 +196,33 @@ window.showToast = function showToast(message, timeout = 2200) {
 };
 
 const showToast = window.showToast;
+
+// ── Latest commit of the live repo ─────────────────────────────────────
+// window.WS_LatestCommit() -> Promise of { sha, htmlUrl } for the newest
+// main-branch commit, or null if it can't be reached. One lookup per page,
+// shared by the footer label (ui.js), the "Updates & changes" modal
+// (updates.js) and the news page. Cached in sessionStorage for 5 minutes so
+// moving between pages doesn't hit the GitHub API's unauthenticated rate limit.
+(() => {
+  const REPO      = "wannasmile4evr/wannasmile4evr.github.io";
+  const CACHE_KEY = "ws_latest_commit_cache";
+  const CACHE_TTL_MS = 5 * 60 * 1000;
+  let promise = null;
+  window.WS_LatestCommit = function () {
+    if (promise) return promise;
+    let cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null"); } catch (_) {}
+    if (cached && cached.sha && Date.now() - cached.time < CACHE_TTL_MS) {
+      return (promise = Promise.resolve({ sha: cached.sha, htmlUrl: cached.htmlUrl }));
+    }
+    promise = fetch(`https://api.github.com/repos/${REPO}/commits/main`)
+      .then((res) => { if (!res.ok) throw new Error(`GitHub API ${res.status}`); return res.json(); })
+      .then((data) => {
+        if (!data || !data.sha || !data.html_url) return null;
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ sha: data.sha, htmlUrl: data.html_url, time: Date.now() })); } catch (_) {}
+        return { sha: data.sha, htmlUrl: data.html_url };
+      })
+      .catch((err) => { console.warn("[latest-commit] lookup failed:", err); return null; });
+    return promise;
+  };
+})();
