@@ -61,6 +61,21 @@ WannaSmile is built with the following languages, tools, and platforms. Explore 
   <img src="https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux">
 </p>
 
+# Contributors
+
+These are all the contributors of WannaSmile, check out their pages & drop a follow :)
+<p align="center">
+  <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=wannasmile4evr/wannasmile4evr.github.io" alt="WannaSmile4Evr Contributors">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io/graphs/contributors">View all contributors</a>
+  ·
+  <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io/graphs/commit-activity">Commit Activity</a>
+</p>
+
 ## 🚀 Getting Started
 
 Visit the live website to explore the project:
