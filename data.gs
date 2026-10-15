@@ -12,7 +12,10 @@
 //                     POST type=rate (approved ticket + key, once per asset)
 //   RatingLogWS       who rated what (made on the first rating)
 //   DevBuildWS        ?type=devbuild, POST (token)
-//   QuoteSystemWS     ?type=quotes (col A), ?type=searchquotes (col B)
+//   QuoteSystemWS     ?type=quotes (col A), ?type=searchquotes (col B),
+//                     ?type=typingquotes (col C: "is typing" lines for the
+//                     site-wide typing indicator, see "Typing" below; an empty
+//                     column C is fine, the site falls back to "<name> is typing...")
 //   QRWS              ?type=qr (col A)
 //   SystemDataSyncWS  ?type=sync, POST (token)
 //   ContribWS         ?type=contrib  who may open the debug panel (devtools.js).
@@ -33,6 +36,10 @@
 //                     below; chatCleanup() is the daily tidy-up.
 //   ProfileNetWS      profile, connections and avatars (see "ProfileNet" below);
 //                     ?type=profile (GET) and POST type=profile
+//                     ?type=chatprofiles: display name + 50px avatar of you and
+//                     your accepted friends (chat page and message cards)
+//   ReportsWS         asset reports from the library cards: POST type=report
+//                     (made on first use, see "Reports" below)
 //
 //   The optional DM websocket worker (documentation/websocket/) uses two more:
 //                     ?type=whoami: caller's own approved ticket + key -> its
@@ -50,7 +57,7 @@
 // onSheetChange (run installChangeTrigger() once) or clearCache().
 // Bump WS_BUILD on every deploy; check with ?type=build.
 // ═══════════════════════════════════════════════════════════════════════
-const WS_BUILD = "WS-DATA-07";
+const WS_BUILD = "WS-DATA-08";
 
 // Customization feeds live in CUST now. Asking DATA for one answers "moved"
 // instead of falling through to the assets feed.
@@ -68,10 +75,11 @@ const SHEET = {
   chatFriends:  "ChatFriendsWS",
   chatMessages: "ChatMessagesWS",
   profiles:     "ProfileNetWS",
+  reports:      "ReportsWS",
 };
 
 const FEEDS_BY_SHEET = {
-  [SHEET.quotes]:   ["quotes", "searchquotes"],
+  [SHEET.quotes]:   ["quotes", "searchquotes", "typingquotes"],
   [SHEET.assets]:   ["assets", "discovery"],
   [SHEET.devbuild]: ["devbuild"],
   [SHEET.sync]:     ["sync"],
@@ -83,9 +91,10 @@ const FEEDS_BY_SHEET = {
   [SHEET.chatFriends]:  [],
   [SHEET.chatMessages]: [],
   [SHEET.profiles]:     [],
+  [SHEET.reports]:      [],
 };
 
-const ALL_FEEDS = ["quotes", "searchquotes", "assets", "discovery", "devbuild", "sync", "tickets", "contrib", "qr"];
+const ALL_FEEDS = ["quotes", "searchquotes", "typingquotes", "assets", "discovery", "devbuild", "sync", "tickets", "contrib", "qr"];
 
 const ASSET_HEADERS = [
   "title", "author", "link", "image", "category", "sub-category",
@@ -132,6 +141,7 @@ function doGet(e) {
   switch (type) {
     case "quotes":       return _quotesGet(1, "quotes", fresh);
     case "searchquotes": return _quotesGet(2, "searchquotes", fresh);
+    case "typingquotes": return _quotesGet(3, "typingquotes", fresh);
     case "qr":           return _qrGet(fresh);
     case "sync":         return _syncGet(fresh);
     case "devbuild":     return _assetFeedGet(p, _devBuildSheet(), "devbuild", fresh);
@@ -141,6 +151,7 @@ function doGet(e) {
     case "whoami":       return _whoamiGet(p);
     case "chat":         return _chatGet(p);
     case "profile":      return _profileGet(p);
+    case "chatprofiles": return _chatProfilesGet(p);
     case "assets":
     default:             return _assetFeedGet(p, _assetSheet(), "assets", fresh);
   }
@@ -165,6 +176,7 @@ function doPost(e) {
     case "userexists": return _userExistsPost(malformed ? null : body);
     case "chat":     return _chatPost(malformed ? null : body);
     case "profile":  return _profilePost(malformed ? null : body);
+    case "report":   return _reportPost(malformed ? null : body);
     case "devbuild": return _assetFeedPost(body, _devBuildSheet());
     case "asset":    return _assetAliasPost(body);
     case "assets":
@@ -334,6 +346,8 @@ function _quotesGet(col, feed, fresh) {
 
     const lastRow = sheet.getLastRow();
     if (lastRow < 1) return { "": [] };
+    // A sheet with fewer columns than asked for (no column C yet) has no lines.
+    if (sheet.getLastColumn() < col) return { "": [] };
 
     const column = sheet.getRange(1, col, lastRow, 1).getValues();
     const header = String(column[0][0]).trim();
@@ -1146,7 +1160,10 @@ function _ticketInfoGet() {
 //        { ok, unchanged:true } from the cache without reading any sheet.
 // POST { type:"chat", action, ticket, key, ... }
 //        request {to} · accept {from} · decline {from} · cancel {to}
-//        remove {name} · send {to, text}
+//        remove {name} · send {to, text} · typing {to}
+//
+// GET and its "unchanged" answer also carry typing:[names typing to you] and
+// typingLeft:{ name: msLeft } (see "typing" below).
 //
 // 60 messages are kept per friendship: each new message pushes the oldest
 // one out. chatCleanup() (daily, see installChatCleanupTrigger) is the
@@ -1162,6 +1179,8 @@ const CHAT_REV_TTL      = 21600;
 const CHAT_RATE_MAX     = 8;      // messages per CHAT_RATE_SECS, per user
 const CHAT_RATE_SECS    = 10;
 const CHAT_NAME_RE      = /^[a-z0-9][a-z0-9_.\-]{2,19}$/;
+const CHAT_TYPING_MS    = 9000;   // how long one "typing" ping keeps the flag up
+const CHAT_TYPING_GAP   = 2;      // seconds: at most one accepted ping per sender -> friend
 const CHAT_FRIEND_HEADERS = ["Pair", "From", "To", "Status", "Updated"];
 const CHAT_MSG_HEADERS    = ["Pair", "From", "Text", "Timestamp"];
 
@@ -1231,6 +1250,63 @@ function _chatBump(names) {
   });
 }
 
+// ── typing ───────────────────────────────────────────────────────────────
+// Real activity only: the sender's chat page posts { action:"typing", to }
+// while a draft is being written, and the server keeps one short-lived flag
+// per (sender -> friend) in the script cache (never in a sheet). The friend's
+// next poll reads it, even on an "unchanged" answer, as
+//   typing: ["bob"], typingLeft: { bob: 5400 }   (ms the flag has left)
+// A sent message clears the sender's flag. The flags live in one cache entry
+// per recipient ("chattyp:<name>" = { sender: expiryMs }); two pings landing in
+// the same instant can drop one flag, which the next ping restores.
+function _chatTypingRead(name) {
+  let map = {};
+  try { map = JSON.parse(_cache().get("chattyp:" + name) || "{}") || {}; } catch (err) { map = {}; }
+  const now = Date.now();
+  const out = {};
+  Object.keys(map).forEach(k => { if (CHAT_NAME_RE.test(k) && Number(map[k]) > now) out[k] = Number(map[k]); });
+  return out;
+}
+
+function _chatTypingWrite(name, map) {
+  try {
+    if (Object.keys(map).length) _cache().put("chattyp:" + name, JSON.stringify(map), 30);
+    else _cache().remove("chattyp:" + name);
+  } catch (err) {}
+}
+
+function _chatTypingFields(me) {
+  const map = _chatTypingRead(me);
+  const now = Date.now();
+  const typing = Object.keys(map);
+  const left = {};
+  typing.forEach(k => { left[k] = Math.max(0, map[k] - now); });
+  return { typing: typing, typingLeft: left };
+}
+
+function _chatTypingSet(from, to, on) {
+  const map = _chatTypingRead(to);
+  if (on) map[from] = Date.now() + CHAT_TYPING_MS;
+  else delete map[from];
+  _chatTypingWrite(to, map);
+}
+
+// Cached for five minutes so a typing ping doesn't read the friends sheet each time.
+function _chatIsFriend(me, other) {
+  const pair = _chatPair(me, other);
+  const ck = "chatfr:" + pair;
+  try { if (_cache().get(ck) === "1") return true; } catch (err) {}
+  const hit = _chatFriendRows().filter(r => r.pair === pair && r.status === "accepted")[0];
+  if (hit) { try { _cache().put(ck, "1", 300); } catch (err) {} }
+  return !!hit;
+}
+
+function _chatForgetFriend(a, b) {
+  try { _cache().remove("chatfr:" + _chatPair(a, b)); } catch (err) {}
+  _chatTypingSet(a, b, false);
+  _chatTypingSet(b, a, false);
+}
+
 // ── sheets ───────────────────────────────────────────────────────────────
 function _chatSheet(name, headers) {
   let sheet = _sheet(name, false);
@@ -1295,7 +1371,10 @@ function _chatGet(params) {
   if (!me) return _chatErr("ticket", "Chat needs your own approved ticket.");
 
   const rev = _chatRev(me);
-  if (params.rev && String(params.rev) === rev) return _json({ ok: true, unchanged: true, rev: rev, me: me });
+  const typingNow = _chatTypingFields(me);
+  if (params.rev && String(params.rev) === rev) {
+    return _json({ ok: true, unchanged: true, rev: rev, me: me, typing: typingNow.typing, typingLeft: typingNow.typingLeft });
+  }
 
   const withName = _contribUser(params.with);
   const mine = _chatFriendRows().filter(r => r.from === me || r.to === me);
@@ -1324,7 +1403,8 @@ function _chatGet(params) {
   friends.sort((a, b) => (order[a.status] - order[b.status]) || ((b.last ? b.last.ts : 0) - (a.last ? a.last.ts : 0)) || (a.name < b.name ? -1 : 1));
   friends.forEach(f => { delete f.pair; if (!f.last) f.last = null; });
 
-  return _json({ ok: true, me: me, rev: rev, friends: friends, with: withName, messages: messages, max: CHAT_MAX_PER_PAIR });
+  return _json({ ok: true, me: me, rev: rev, friends: friends, with: withName, messages: messages, max: CHAT_MAX_PER_PAIR,
+    typing: typingNow.typing, typingLeft: typingNow.typingLeft });
 }
 
 // ── POST ─────────────────────────────────────────────────────────────────
@@ -1333,6 +1413,20 @@ function _chatPost(body) {
   const me = _chatAuth(body.ticket, body.key);
   if (!me) return _chatErr("ticket", "Chat needs your own approved ticket.");
   const action = _key(body.action);
+
+  // "I'm typing": no lock and no sheet write, so it stays cheap.
+  if (action === "typing") {
+    const to = _contribUser(body.to);
+    if (!CHAT_NAME_RE.test(to) || to === me) return _chatErr("bad_name", "Who?");
+    const rk = "chattypgap:" + me + ">" + to;
+    try {
+      if (_cache().get(rk)) return _json({ ok: true, throttled: true });
+      _cache().put(rk, "1", CHAT_TYPING_GAP);
+    } catch (err) {}
+    if (!_chatIsFriend(me, to)) return _chatErr("not_friends", "You can only message accepted friends.");
+    _chatTypingSet(me, to, true);
+    return _json({ ok: true });
+  }
 
   return _withLock(() => {
     const done = (extra) => {
@@ -1394,6 +1488,7 @@ function _chatPost(body) {
       if (hit) _chatFriendsSheet().deleteRow(hit.row);
       _chatDeleteMessages(_chatPair(me, other));
       if (hit && hit.status === "accepted") _profileUnlink(me, other);
+      _chatForgetFriend(me, other);
       _chatBump([me, other]);
       return done({ state: "none" });
     }
@@ -1417,6 +1512,7 @@ function _chatPost(body) {
       sheet.getRange(at, 1, 1, 3).setNumberFormat("@");
       sheet.getRange(at, 1, 1, 4).setValues([[hit.pair, me, text, Date.now()]]);
       _chatTrimPair(sheet, hit.pair);
+      _chatTypingSet(me, to, false);       // the message replaces the "typing..." flag
       _chatBump([me, to]);
       return done({});
     }
@@ -1498,6 +1594,137 @@ function installChatCleanupTrigger() {
   const exists = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === "chatCleanup");
   if (!exists) ScriptApp.newTrigger("chatCleanup").timeBased().everyDays(1).atHour(4).create();
   return exists ? "chatCleanup trigger already installed." : "chatCleanup trigger installed (daily, around 4am).";
+}
+
+// ── Chat profiles: names + avatars for the chat page and message cards ───
+// GET ?type=chatprofiles&ticket&key[&known=name~updated|name~updated]
+//   -> { ok, profiles:[{ name, displayName, updated, avatar, same }] }
+// Covers YOU and your accepted friends only (never anyone else), and only the
+// 50px avatar + display name, so a private profile still shows its picture to
+// the people it is chatting with and to no one else. Send back what you
+// already hold in `known`; an avatar that hasn't changed since then comes
+// back as { same:true } without the image, which keeps idle refreshes small.
+function _chatProfilesGet(params) {
+  const me = _chatAuth(params.ticket, params.key);
+  if (!me) return _chatErr("ticket", "Chat needs your own approved ticket.");
+
+  const names = [me];
+  _chatFriendRows().forEach(r => {
+    if (r.status !== "accepted") return;
+    if (r.from === me) names.push(r.to);
+    else if (r.to === me) names.push(r.from);
+  });
+
+  const known = {};
+  String(params.known == null ? "" : params.known).slice(0, 4000).split("|").forEach(part => {
+    const i = part.indexOf("~");
+    if (i > 0) known[_contribUser(part.slice(0, i))] = part.slice(i + 1);
+  });
+
+  let sheet = null, cols = null;
+  try { sheet = _sheet(PROFILE_SHEET_NAME, false); if (sheet) cols = _profileCols(sheet); } catch (err) { sheet = null; }
+  const tickets = _profileTickets();
+  const profiles = [];
+  names.forEach(n => {
+    const t = tickets[n];
+    if (!t || !t.approved) return;
+    const row = sheet && cols ? _profileFind(sheet, cols, n) : 0;
+    const p = row ? _profileRead(sheet, cols, row) : null;
+    const updated = p ? p.updated : "";
+    const same = !!p && known[n] !== undefined && known[n] === updated;
+    profiles.push({
+      name: n,
+      displayName: p ? p.displayName : "",
+      updated: updated,
+      avatar: !same && p ? p.avatars["50"] : "",
+      same: same,
+    });
+  });
+  return _json({ ok: true, me: me, profiles: profiles });
+}
+
+// ── Reports: "Report a problem" on a library card ────────────────────────
+// POST { type:"report", ticket, key, link, reason }
+//   Appends one row to the sheet ReportsWS (made on first use):
+//     Timestamp | TicketID | Username | Reason | Title | Author | Link | Status
+//   The browser only says WHICH asset (its link) and WHY; title and author are
+//   read from AssetBuilderWS here, so a report can't carry made-up text, and
+//   reason has to be one of REPORT_REASONS. Needs an approved ticket + key.
+//   Limits: REPORT_RATE_MAX per hour per ticket, and a ticket can't file the
+//   same reason for the same asset twice. Status starts as "open" for you to
+//   change by hand (e.g. "fixed").
+//   Answers { ok:true } or { ok:false, code, error } with code one of
+//   ticket | bad_request | bad_reason | bad_asset | already_reported | slow | busy.
+const REPORT_REASONS = ["Blocked", "404/Missing", "Missing Icon", "Buffer/Loading Error"];
+const REPORT_HEADERS = ["Timestamp", "TicketID", "Username", "Reason", "Title", "Author", "Link", "Status"];
+const REPORT_RATE_MAX = 10;
+const REPORT_RATE_SECS = 3600;
+const REPORT_LINK_MAX = 2000;
+const REPORT_SCAN_ROWS = 2000;
+
+function _reportErr(code, error) {
+  return _json({ ok: false, code: code, error: error });
+}
+
+function _reportSheet() {
+  let sheet = _sheet(SHEET.reports, false);
+  if (!sheet) {
+    sheet = _book().insertSheet(SHEET.reports);
+    sheet.appendRow(REPORT_HEADERS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// Report cells are plain text (a title starting with "=" must never run as a formula).
+function _reportText(v, max) {
+  return String(v == null ? "" : v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, max);
+}
+
+function _reportPost(body) {
+  if (!body || typeof body !== "object") return _reportErr("bad_request", "Bad request.");
+  const ticket = _reportText(body.ticket, 64);
+  if (!ticket || !_ticketIsApproved(_ticketStatus(ticket, body.key))) {
+    return _reportErr("ticket", "An approved access ticket is needed to send a report.");
+  }
+  const reason = REPORT_REASONS.filter(r => r === body.reason)[0];
+  if (!reason) return _reportErr("bad_reason", "That isn't a report reason.");
+  const link = _reportText(body.link, REPORT_LINK_MAX + 1);
+  if (!link || link.length > REPORT_LINK_MAX) return _reportErr("bad_asset", "Which asset?");
+
+  const rk = "reportrl:" + ticket;
+  let used = 0;
+  try { used = Number(_cache().get(rk)) || 0; } catch (err) {}
+  if (used >= REPORT_RATE_MAX) return _reportErr("slow", "You've sent a lot of reports. Try again in a while.");
+
+  return _withLock(() => {
+    const assets = _assetSheet();
+    const arow = assets ? _assetFindRowByLink(assets, link) : -1;
+    if (arow === -1) return _reportErr("bad_asset", "That asset isn't in the library.");
+    const info = assets.getRange(arow, 1, 1, 3).getValues()[0];     // title, author, link
+    const title = _reportText(info[0], 200);
+    const author = _reportText(info[1], 200);
+
+    const sheet = _reportSheet();
+    const last = sheet.getLastRow();
+    if (last > 1) {
+      const from = Math.max(2, last - REPORT_SCAN_ROWS + 1);
+      const rows = sheet.getRange(from, 2, last - from + 1, 6).getValues();   // TicketID .. Link
+      for (let i = 0; i < rows.length; i++) {
+        if (String(rows[i][0]).trim() === ticket && String(rows[i][2]) === reason && String(rows[i][5]).trim() === link) {
+          return _reportErr("already_reported", "You've already reported this asset for that reason.");
+        }
+      }
+    }
+
+    const at = last + 1;
+    sheet.getRange(at, 1, 1, REPORT_HEADERS.length).setNumberFormat("@");
+    sheet.getRange(at, 1, 1, REPORT_HEADERS.length).setValues([[
+      new Date().toISOString(), ticket, _ticketNameOf(ticket), reason, title, author, link, "open",
+    ]]);
+    try { _cache().put(rk, String(used + 1), REPORT_RATE_SECS); } catch (err) {}
+    return _json({ ok: true });
+  });
 }
 
 // ── ProfileNet: profile, connections and avatar ──────────────────────────

@@ -1,7 +1,7 @@
 {
   "author": "smiledemic",
   "title": "WannaSmile Expansion Update",
-  "description": "Faster-loading JS engine, error fixes, WannaChat friends and messaging built into the site, and websocket documentation for later.",
+  "description": "Expansion update brings a communications system, the pages previously hidden due to lack of icons, and a few fixed pages like pokemon no longer having to download to emulate now straight from the browser.",
   "version": "2.1.0",
   "date": "101026"
 }

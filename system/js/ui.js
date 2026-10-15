@@ -360,7 +360,10 @@ document.addEventListener("DOMContentLoaded", () => {
   overlay?.addEventListener("click", (e) => { if (e.target === overlay) hideOverlay(); });
 });
 
-// DM button (last header icon): opens WannaChat in a new tab, like the nav links.
+// DM button (last header icon): opens WannaChat in its own tab so the library
+// stays where it is. msgcore.js (WS_Msg) opens the newest unread conversation
+// directly; without it (not loaded / no ticket) this is just the inbox.
 document.getElementById("openDm")?.addEventListener("click", () => {
-  window.open("system/pages/chat/index.html", "_blank");
+  if (window.WS_Msg) { window.WS_Msg.openFromButton(); return; }
+  window.open("system/pages/chat/index.html", "wannachat");
 });

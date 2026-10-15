@@ -15,25 +15,37 @@
 //  • Friend requests: send → they Accept (or Decline) → then you can chat.
 //    The newest 60 messages per friendship are kept; older ones are deleted
 //    by the server as new ones arrive.
+//  • msgcore.js (WS_Msg) is shared with the rest of the site. This page hands
+//    it every poll answer; in return it supplies profile pictures and display
+//    names, the real "is typing" state (and the column-C typing quotes),
+//    unread/seen bookkeeping and the notification cards. #with=<username> in
+//    the address opens that conversation (that's where a notification click
+//    lands).
 (() => {
   const $ = (id) => document.getElementById(id);
   const API = window.WS_ENDPOINTS && window.WS_ENDPOINTS.data;
+  const M = window.WS_Msg || null;        // optional: the page still works as plain chat without it
 
   const K = { id: "ws_ticket_id", key: "ws_ticket_key", status: "ws_ticket_status", user: "ws_username", seen: "ws_chat_seen" };
   const read = (k) => { try { return localStorage.getItem(k) || ""; } catch (_) { return ""; } };
   const NAME_RE  = /^[a-z0-9][a-z0-9_.\-]{2,19}$/;
   const MAX_TEXT = 500;
-  const POLL_MS  = 5000;      // tab in front
+  const POLL_MS  = 4000;      // tab in front (short, so "typing" shows up while it's happening)
   const SLOW_MS  = 30000;     // tab hidden
   const MAX_BACKOFF = 60000;
+  const TYPING_PING_MS = 3000;   // how often "I'm typing" is sent while a draft is being written
+  const GROUP_GAP_MS = 5 * 60000; // messages from one person closer than this share one avatar/name
 
   const state = {
     me: "", friends: [], active: "", messages: [], rev: "", max: 60,
     loading: false, again: false, fails: 0, timer: 0, dead: false, sending: false,
+    wanted: "",             // #with=<name> still waiting for the friend list
+    lastPing: 0,
   };
 
   const toast = (m) => (window.showToast ? window.showToast(m, 3200) : console.log(m));
   const cleanName = (v) => String(v || "").trim().replace(/^@/, "").toLowerCase();
+  const visibleNow = () => document.visibilityState === "visible" && document.hasFocus();
 
   // Same small DOM helper everywhere; all user text goes in through
   // textContent, never innerHTML.
@@ -50,15 +62,37 @@
   }
   const icon = (cls) => el("i", { class: cls, "aria-hidden": "true" });
 
+  // ── names and pictures (WS_Msg when present) ──────────────────────────
+  const shown = (name) => (M ? M.displayName(name) : name);
+  function avatar(name, cls) {
+    if (M) return M.avatar(name, cls);
+    return el("span", { class: "ws-av" + (cls ? " " + cls : "") }, String(name || "?").charAt(0).toUpperCase());
+  }
+  // A name that follows later profile updates: refreshNames() rewrites it in place.
+  const nameTag = (tag, user, cls) => el(tag, cls ? { class: cls, "data-ws-name": user, text: shown(user) } : { "data-ws-name": user, text: shown(user) });
+  function refreshNames() {
+    document.querySelectorAll("[data-ws-name]").forEach((n) => {
+      const t = shown(n.dataset.wsName);
+      if (n.textContent !== t) n.textContent = t;
+    });
+  }
+
   // ── seen-markers (unread dots), per browser ───────────────────────────
   const seen = () => { try { const v = JSON.parse(read(K.seen) || "{}"); return v && typeof v === "object" ? v : {}; } catch (_) { return {}; } };
-  const markSeen = (name, ts) => {
-    if (!name || !ts) return;
+  const markSeenLocal = (name, ts) => {
     const s = seen();
     if ((s[name] || 0) >= ts) return;
     s[name] = ts;
     try { localStorage.setItem(K.seen, JSON.stringify(s)); } catch (_) {}
   };
+  // Only counts as read while the conversation is really in front of the person;
+  // a message that lands in a hidden tab stays unread (and notifies).
+  function markActiveSeen() {
+    if (!state.active || !visibleNow()) return;
+    const last = state.messages[state.messages.length - 1];
+    if (!last || last.pending) return;
+    if (M) M.markSeen(state.active, last.ts); else markSeenLocal(state.active, last.ts);
+  }
 
   // ── network ───────────────────────────────────────────────────────────
   const creds = () => ({ ticket: read(K.id), key: read(K.key) });
@@ -120,7 +154,7 @@
         // An older data.gs doesn't know ?type=chat and answers with the
         // assets list instead.
         if (Array.isArray(data) || (data && Array.isArray(data.items)) || (data && !data.code && !data.error)) {
-          return gate("Chat isn't switched on yet", "The data script hasn't been updated for WannaChat. Redeploy data.gs (WS-DATA-06 or newer) and reload this page.", "Back to WannaSmile");
+          return gate("Chat isn't switched on yet", "The data script hasn't been updated for WannaChat. Redeploy data.gs (WS-DATA-08 or newer) and reload this page.", "Back to WannaSmile");
         }
         if (data && data.code === "ticket") {
           return gate("Your ticket can't chat", "Chat needs your own approved access ticket, with its key. If you moved browsers, re-import your data on WannaSmile first.", "Back to WannaSmile");
@@ -135,6 +169,8 @@
       paintMe();
       state.rev = data.rev || state.rev;
       net("live", "Live");
+      // Typing flags ride on every answer, even "unchanged" ones.
+      if (M) M.ingest(data, { viewing: state.active });
       if (data.unchanged) return;
 
       state.max = data.max || 60;
@@ -142,11 +178,16 @@
       if (state.active && !state.friends.some((f) => f.name === state.active && f.status === "friend")) {
         state.active = "";        // removed (by either of you) or never accepted
         state.messages = [];
+        if (M) M.setViewing("");
       } else if (state.active && data.with === state.active) {
-        state.messages = data.messages || [];
-        const last = state.messages[state.messages.length - 1];
-        if (last) markSeen(state.active, last.ts);
+        // A message still being sent stays on screen until the server lists it
+        // (the 60 s allowance covers a clock that is a little off).
+        const listed = data.messages || [];
+        const pending = state.sending ? state.messages.filter((m) => m.pending) : [];
+        state.messages = listed.concat(pending.filter((p) => !listed.some((m) => m.from === p.from && m.text === p.text && m.ts >= p.ts - 60000)));
+        markActiveSeen();
       }
+      openWanted();
       renderFriends();
       renderConversation();
     } catch (err) {
@@ -195,29 +236,55 @@
     state.active = name;
     state.messages = [];
     state.rev = "";
+    state.lastPing = 0;
     $("chat").classList.add("open");
+    if (M) M.setViewing(name);
     renderFriends();
     renderConversation();
     refresh(true);
     $("msg").focus({ preventScroll: true });
   }
 
-  $("backBtn").addEventListener("click", () => {
+  function closeConversation() {
     state.active = "";
     state.rev = "";
+    if (M) M.setViewing("");
     $("chat").classList.remove("open");
     renderFriends();
     renderConversation();
-  });
+  }
+
+  $("backBtn").addEventListener("click", closeConversation);
 
   $("removeBtn").addEventListener("click", () => {
     const name = state.active;
     if (!name) return;
-    if (!window.confirm(`Remove @${name}? This also deletes your chat with them.`)) return;
+    if (!window.confirm(`Remove ${shown(name)} (@${name})? This also deletes your chat with them.`)) return;
     state.active = "";
+    if (M) M.setViewing("");
     $("chat").classList.remove("open");
     act("remove", { name }, `Removed @${name}`);
   });
+
+  // #with=<username> (notification click, or a link): open that conversation as
+  // soon as the friend list is known.
+  function wantFromHash() {
+    const m = /(?:^#|&)with=([^&]+)/.exec(location.hash || "");
+    if (!m) return;
+    let n = "";
+    try { n = cleanName(decodeURIComponent(m[1])); } catch (_) { return; }
+    if (!NAME_RE.test(n)) return;
+    state.wanted = n;
+    openWanted();
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (_) {}
+  }
+  function openWanted() {
+    if (!state.wanted || !state.friends.length) return;
+    const n = state.wanted;
+    state.wanted = "";
+    if (state.friends.some((f) => f.name === n && f.status === "friend")) { if (state.active !== n) open(n); }
+    else toast(`@${n} isn't one of your friends yet.`);
+  }
 
   async function send() {
     const box = $("msg");
@@ -226,6 +293,7 @@
     state.sending = true;
     const to = state.active;
     box.value = "";
+    state.lastPing = 0;
     updateCount();
     autosize();
     const tmp = { from: state.me, text, ts: Date.now(), pending: true };
@@ -250,7 +318,16 @@
   $("msg").addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
   });
-  $("msg").addEventListener("input", () => { updateCount(); autosize(); });
+  $("msg").addEventListener("input", () => {
+    updateCount(); autosize();
+    // Real typing: tell the friend while there's an unsent draft, at most every few seconds.
+    if (!$("msg").value.trim()) { state.lastPing = 0; return; }
+    const now = Date.now();
+    if (M && state.active && now - state.lastPing >= TYPING_PING_MS) {
+      state.lastPing = now;
+      M.sendTyping(state.active);
+    }
+  });
 
   function updateCount() { $("left").textContent = String(MAX_TEXT - $("msg").value.length); }
   function autosize() {
@@ -262,8 +339,14 @@
   // ── rendering ─────────────────────────────────────────────────────────
   function paintMe() {
     if (!state.me) return;
-    $("meName").textContent = "@" + state.me;
-    $("meAvatar").textContent = state.me.charAt(0);
+    const holder = $("meAvatar");
+    if (holder.dataset.for !== state.me) {
+      holder.dataset.for = state.me;
+      holder.textContent = "";
+      holder.append(avatar(state.me));
+    }
+    $("meName").textContent = shown(state.me);
+    $("meUser").textContent = "@" + state.me;
   }
 
   const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -275,9 +358,18 @@
     if (d.toDateString() === y.toDateString()) return "Yesterday";
     return d.toLocaleDateString([], { month: "short", day: "numeric", year: d.getFullYear() === now.getFullYear() ? undefined : "numeric" });
   }
+  // Short stamp for the list: time today, otherwise the date.
+  function fmtShort(ts) {
+    const d = new Date(ts);
+    return d.toDateString() === new Date().toDateString() ? fmtTime(ts) : d.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+
+  const isTyping = (name) => !!M && M.isTyping(name);
+  const typingLine = (name) => (M ? M.typingText(name) : "");
 
   function renderFriends() {
     const list = $("list");
+    const keep = list.scrollTop;
     list.textContent = "";
     const incoming = state.friends.filter((f) => f.status === "incoming");
     const friends  = state.friends.filter((f) => f.status === "friend");
@@ -287,46 +379,78 @@
     if (incoming.length) {
       list.append(el("div", { class: "group", text: `Requests (${incoming.length})` }));
       for (const f of incoming) {
-        list.append(el("div", { class: "row" },
-          el("span", { class: "nm", text: "@" + f.name }),
+        list.append(el("div", { class: "conv-row" },
+          avatar(f.name),
+          el("span", { class: "tx" }, nameTag("span", f.name, "nm"), el("span", { class: "pv", text: "@" + f.name + " wants to be friends" })),
           el("button", { class: "btn sm", type: "button", title: "Accept", "aria-label": "Accept " + f.name, onclick: () => act("accept", { from: f.name }, `You and @${f.name} are friends now`) }, icon("fa-solid fa-check")),
           el("button", { class: "btn ghost sm", type: "button", title: "Decline", "aria-label": "Decline " + f.name, onclick: () => act("decline", { from: f.name }) }, icon("fa-solid fa-xmark"))
         ));
       }
     }
 
-    list.append(el("div", { class: "group", text: "Friends" }));
+    list.append(el("div", { class: "group", text: "Conversations" }));
     if (!friends.length) {
       list.append(el("div", { class: "empty", text: incoming.length ? "Accept a request to start chatting." : "No friends yet. Add someone by their username above." }));
     }
     for (const f of friends) {
-      const unread = f.last && f.last.from !== state.me && f.last.ts > (s[f.name] || 0) && f.name !== state.active;
-      const preview = f.last ? (f.last.from === state.me ? "You: " : "") + f.last.text : "No messages yet";
-      list.append(el("button", { class: "row friend" + (f.name === state.active ? " on" : ""), type: "button", onclick: () => open(f.name) },
-        el("span", { class: "tx" }, el("span", { class: "nm", text: "@" + f.name, style: "display:block" }), el("span", { class: "pv", text: preview })),
-        unread ? el("span", { class: "dot", title: "New message" }) : null
+      const unread = !!f.last && f.last.from !== state.me && f.last.ts > (s[f.name] || 0) && !(f.name === state.active && visibleNow());
+      const typing = isTyping(f.name);
+      const preview = typing ? typingLine(f.name) : f.last ? (f.last.from === state.me ? "You: " : "") + f.last.text : "No messages yet";
+      list.append(el("button", { class: "conv-row" + (f.name === state.active ? " on" : "") + (unread ? " unread" : ""), type: "button", onclick: () => open(f.name) },
+        avatar(f.name),
+        el("span", { class: "tx" }, nameTag("span", f.name, "nm"), el("span", { class: "pv" + (typing ? " typing" : ""), text: preview })),
+        el("span", { class: "meta" }, f.last ? el("span", { text: fmtShort(f.last.ts) }) : null, unread ? el("span", { class: "dot", title: "New message" }) : null)
       ));
     }
 
     if (outgoing.length) {
       list.append(el("div", { class: "group", text: "Sent requests" }));
       for (const f of outgoing) {
-        list.append(el("div", { class: "row" },
-          el("span", { class: "nm", text: "@" + f.name }),
-          el("span", { class: "pv", style: "font-size:.7rem;opacity:.6", text: "waiting" }),
+        list.append(el("div", { class: "conv-row" },
+          avatar(f.name),
+          el("span", { class: "tx" }, nameTag("span", f.name, "nm"), el("span", { class: "pv", text: "waiting for an answer" })),
           el("button", { class: "btn ghost sm", type: "button", title: "Cancel request", "aria-label": "Cancel request to " + f.name, onclick: () => act("cancel", { to: f.name }, "Request cancelled") }, icon("fa-solid fa-xmark"))
         ));
       }
     }
+    list.scrollTop = keep;
   }
 
   function renderConversation() {
     const on = !!state.active;
     $("idle").hidden = on;
     $("convBody").hidden = !on;
-    if (!on) { $("chat").classList.remove("open"); return; }
-    $("peer").textContent = "@" + state.active;
+    if (!on) { $("chat").classList.remove("open"); paintTyping(); return; }
+    const holder = $("peerAvatar");
+    if (holder.dataset.for !== state.active) {
+      holder.dataset.for = state.active;
+      holder.textContent = "";
+      holder.append(avatar(state.active));
+    }
+    $("peer").textContent = shown(state.active);
+    paintTyping();
     renderThread(false);
+  }
+
+  // "<name> is typing..." under the thread and in the header; real flags only.
+  function paintTyping() {
+    const row = $("typingRow");
+    const sub = $("peerSub");
+    const on = !!state.active && isTyping(state.active);
+    const line = on ? typingLine(state.active) : "";
+    if (sub) {
+      sub.className = on ? "typing" : "";
+      sub.textContent = on ? line : state.active ? "@" + state.active : "";
+    }
+    if (!row) return;
+    if (!on) { if (row.firstChild) row.textContent = ""; return; }
+    if (row.dataset.line === line && row.firstChild) return;
+    row.dataset.line = line;
+    row.textContent = "";
+    const dots = el("span", { class: "ws-dots", "aria-hidden": "true" }, el("i"), el("i"), el("i"));
+    row.append(dots, el("span", { text: line }));
+    const t = $("thread");
+    if (t.scrollHeight - t.scrollTop - t.clientHeight < 120) t.scrollTop = t.scrollHeight;
   }
 
   function renderThread(forceBottom) {
@@ -336,21 +460,40 @@
     const n = state.messages.length;
     $("cap").textContent = n ? `${Math.min(n, state.max)}/${state.max}` : "";
     if (!n) {
-      box.append(el("div", { class: "empty", text: `Say hi to @${state.active}!` }));
+      box.append(el("div", { class: "empty", text: `Say hi to ${shown(state.active)}!` }));
       return;
     }
     if (n >= state.max) box.append(el("div", { class: "note", text: "Older messages are deleted automatically to keep the latest " + state.max + "." }));
-    let lastDay = "";
+
+    let lastDay = "", grp = null, stack = null, prev = null;
     for (const m of state.messages) {
       const dk = dayKey(m.ts);
-      if (dk !== lastDay) { box.append(el("div", { class: "day", text: fmtDay(m.ts) })); lastDay = dk; }
+      if (dk !== lastDay) { box.append(el("div", { class: "day", text: fmtDay(m.ts) })); lastDay = dk; grp = null; }
       const mine = m.from === state.me;
-      box.append(el("div", { class: "msg " + (mine ? "me" : "them") + (m.pending ? " pending" : "") },
-        el("div", { class: "bubble", text: m.text }),
-        el("div", { class: "when", text: m.pending ? "sending…" : fmtTime(m.ts) })
-      ));
+      // A new run starts for a different sender or after a pause.
+      if (!grp || !prev || prev.from !== m.from || m.ts - prev.ts > GROUP_GAP_MS) {
+        stack = el("div", { class: "stack" },
+          el("div", { class: "by" }, nameTag("b", m.from), " · " + (m.pending ? "sending…" : fmtTime(m.ts))));
+        grp = el("div", { class: "grp " + (mine ? "me" : "them") }, avatar(m.from, "sm"), stack);
+        box.append(grp);
+      }
+      stack.append(el("div", { class: "bubble" + (m.pending ? " pending" : ""), title: m.pending ? "" : fmtTime(m.ts), text: m.text }));
+      prev = m;
     }
     if (forceBottom || nearBottom) box.scrollTop = box.scrollHeight;
+  }
+
+  // Everything WS_Msg can change under us: typing flags, profiles (names/pictures), unread.
+  function onMsgChange(detail) {
+    paintTyping();
+    renderFriends();
+    refreshNames();
+    if (state.active) $("peer").textContent = shown(state.active);
+    paintMe();
+    const n = detail && detail.unread ? detail.unread.length : 0;
+    $("unreadBadge").hidden = !n;
+    $("unreadBadge").textContent = String(n);
+    document.title = (n ? `(${n}) ` : "") + "Messages · WannaSmile4Evr";
   }
 
   // ── start ─────────────────────────────────────────────────────────────
@@ -368,14 +511,27 @@
     paintMe();
     renderFriends();
     updateCount();
+
+    if (M) {
+      // A notification (or the DM button) asking for a conversation while this page is open.
+      M.setOpenHandler((name) => {
+        if (state.friends.some((f) => f.name === name && f.status === "friend")) open(name);
+        else { state.wanted = name; openWanted(); }
+        window.focus();
+      });
+      M.on(onMsgChange);
+    }
+    wantFromHash();
+    window.addEventListener("hashchange", () => { wantFromHash(); });
     refresh(true);
 
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(false); });
-    window.addEventListener("focus", () => refresh(false));
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) { refresh(false); markActiveSeen(); renderFriends(); } });
+    window.addEventListener("focus", () => { refresh(false); markActiveSeen(); renderFriends(); });
     window.addEventListener("online", () => { state.fails = 0; refresh(true); });
     // Signing out (or a revoked ticket) in another tab ends this chat.
     window.addEventListener("storage", (e) => {
       if (e.key === K.status && e.newValue !== "approved") gate("Sign in first", "Your ticket isn't approved any more. Open WannaSmile to sort that out.", "Go to WannaSmile");
+      else if (e.key === K.seen) renderFriends();
     });
   }
 
