@@ -3,7 +3,7 @@
 <h1 align="center">Wanna Smile: Expansion Update</h1>
 
 <p align="center">
-  <strong>"a cure to boredom" -smiledemic</strong>
+  <strong><em>"a cure to boredom"</em> -smiledemic</strong>
 </p>
 
 <p align="center">
@@ -14,9 +14,16 @@
   <img src="https://img.shields.io/github/last-commit/wannasmile4evr/wannasmile4evr.github.io?style=flat-square&color=red&logo=git&logoColor=white" alt="Last Commit">
   <img src="https://img.shields.io/github/repo-size/wannasmile4evr/wannasmile4evr.github.io?style=flat-square&color=red&logo=github&logoColor=white" alt="Repository Size">
   <img src="https://img.shields.io/github/languages/top/wannasmile4evr/wannasmile4evr.github.io?style=flat-square&color=red" alt="Top Language">
+  <a href="https://ankomstudios.com/fundme/">
+    <img src="https://img.shields.io/badge/Support-Donate-red?style=flat-square&logo=githubsponsors&logoColor=white" alt="Support Development">
+  </a>
+  <a href="https://open.spotify.com/artist/01JJmyvW0JjxC0fpLurTAR?si=sKugLrpKS6mHCvkg6AOwmQ">
+    <img src="https://img.shields.io/badge/Support-Spotify-1DB954?style=flat-square&logo=spotify&logoColor=white" alt="Support Through Spotify">
+  </a>
 </p>
 
-## V2.1.3
+
+# V2.1.3
 
 The Expansion Update is finalized, bringing the DM system to completion alongside smaller improvements designed to keep messaging reliable and prevent overload.
 
@@ -24,19 +31,19 @@ The project has also been further modularized. System assets are now hosted exte
 
 ## Features
 
-- **DM System** — Contacting someone has never been easier. Find users by username, then send and receive direct messages.
-- **Factionism** — A new development philosophy for WannaSmile. The project is divided into smaller, more manageable components to improve reliability across GitHub Pages, Cloudflare Workers, and local development environments.
-- **New Themes & Widgets** — Widgets provide quick access to tools contributed by others through the library. Themes can be equipped directly from the **Shop** page to customize your background, with support for uploading custom themes planned for the future.
-- **15 Pages of Assets** — Explore one of WannaSmile's largest libraries. Each page contains 75 assets, totaling over 1,125 assets, with new content continually being added.
-- **Frames & Customization** — Make your WannaSmile experience unique with profile frames, GIF packs, and a wide range of other customization options.
+- **DM System** — Contact users by username to send and receive direct messages.
+- **Factionism** — A development philosophy that divides the project into smaller, more manageable components for reliability across GitHub Pages, Cloudflare Workers, and local environments.
+- **New Themes & Widgets** — Access community-created tools through the library and customize your background with themes from the **Shop** page. Custom theme uploads are planned.
+- **15 Pages of Assets** — Explore over 1,125 assets, with 75 assets per page and new content continually being added.
+- **Frames & Customization** — Personalize your experience with profile frames, GIF packs, and a wide range of other customization options.
 
 ### In the Works
 
 WannaSmile is continually evolving as a creative platform. The following features are in development or planned:
 
 - GIF and sticker reactions within the DM system.
-- An about:blank opener that redirects external content into a blank tab.
-- **SoundScape V2** — SoundScape currently offers songs and albums, but its library and lyrics support need improvement. A larger library and a reworked experience are planned.
+- An about:blank opener for displaying external content in a blank tab.
+- **SoundScape V2** — An improved music experience with a larger library and lyrics support.
 
 ## Tech Stack
 
@@ -63,7 +70,8 @@ WannaSmile is built with the following languages, tools, and platforms. Explore 
 
 # Contributors
 
-These are all the contributors of WannaSmile, check out their pages & drop a follow :)
+These are the contributors to WannaSmile. Check out their profiles and drop them a follow!
+
 <p align="center">
   <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io/graphs/contributors">
     <img src="https://contrib.rocks/image?repo=wannasmile4evr/wannasmile4evr.github.io" alt="WannaSmile4Evr Contributors">
@@ -71,8 +79,8 @@ These are all the contributors of WannaSmile, check out their pages & drop a fol
 </p>
 
 <p align="center">
-  <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io/graphs/contributors">View all contributors</a>
-  ·
+  <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io/graphs/contributors">View All Contributors</a>
+  &nbsp;·&nbsp;
   <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io/graphs/commit-activity">Commit Activity</a>
 </p>
 
@@ -80,7 +88,12 @@ These are all the contributors of WannaSmile, check out their pages & drop a fol
 
 Visit the live website to explore the project:
 
-**[Open WannaSmile4Evr →](https://wannasmile4evr.github.io/)**
+ <p align="right">
+
+  <a href="https://wannasmile4evr.github.io/">
+    <strong>Open WannaSmile4Evr →</strong>
+  </a>
+</p>
 
 To explore or work on the source code, clone the repository:
 
@@ -89,7 +102,7 @@ git clone https://github.com/wannasmile4evr/wannasmile4evr.github.io.git
 cd wannasmile4evr.github.io
 ```
 
-Open `index.html` in VS Code and use a local development server to test changes. Some features depend on external services and may require their configured endpoints and access permissions.
+Open `index.html` in VS Code and use a local development server to test changes. Some features depend on external services and may require configured endpoints and access permissions.
 
 ## 📁 Repository Structure
 
@@ -104,15 +117,28 @@ Open `index.html` in VS Code and use a local development server to test changes.
 | `data.gs` | Google Apps Script integration |
 | `version.json` | Version and update metadata |
 
+---
 
-WannaSmile4Evr is an evolving project. Features, pages, and integrations may change as development continues.
+## Funding & Support
+
+You can support WannaSmile4Evr either by listening to [my music on Spotify](https://open.spotify.com/artist/01JJmyvW0JjxC0fpLurTAR?si=sKugLrpKS6mHCvkg6AOwmQ) or through direct donations to help cover domain costs, hosting, and ongoing development.
+
+<p align="center">
+  <a href="https://ankomstudios.com/fundme/">
+    <strong>Support WannaSmile4Evr</strong>
+  </a>
+</p>
 
 ---
 
 <p align="center">
+WannaSmile4Evr is an evolving project. Features, pages, and integrations may change as development continues.
+</p>
+
+<p align="center">
   <a href="https://github.com/wannasmile4evr">GitHub Profile</a>
-  ·
+  &nbsp;·&nbsp;
   <a href="https://github.com/wannasmile4evr/wannasmile4evr.github.io">Source Code</a>
-  ·
+  &nbsp;·&nbsp;
   <a href="https://wannasmile4evr.github.io/">Live Website</a>
 </p>
