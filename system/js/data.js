@@ -332,7 +332,7 @@
       if (favLink) favLink.href = favLink.dataset.realHref || "/favicon.ico";
 
       const cloakImg = document.querySelector("#cloak-btn img");
-      if (cloakImg) cloakImg.src = "assets/images/cloak-btn/visable.png";
+      if (cloakImg) cloakImg.src = "https://ws.ankomstudios.com/images/cloak-btn/visable.png";
 
       document.documentElement.setAttribute("theme", "redux");
     } catch {}

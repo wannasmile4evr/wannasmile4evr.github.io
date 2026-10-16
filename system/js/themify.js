@@ -233,7 +233,9 @@ function setFavicon(url) {
     link.rel = "icon";
     document.head.appendChild(link);
   }
-  link.href = (url && url.startsWith("http")) ? url : (url ? `system/${url}` : "");
+  link.href = (url && url.startsWith("http")) ? url
+    : /^icons\//.test(url || "") ? "https://ws.ankomstudios.com/cloaks/" + url.slice(6)   // old saved presets ("icons/x.png")
+    : (url ? `system/${url}` : "");
 }
 
 (function applyGlobalCloak() {

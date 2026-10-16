@@ -29,8 +29,9 @@
 // One ticket per person: requests carry a random per-browser client id (the
 // server hands a repeat request the same ticket back and refuses a name
 // that already has one), and once this browser has asked (ws_ticket_requested)
-// the tutorial never offers the request form again. The first 150 tickets
-// ever are approved on the spot by the server. (Bad words in the name or
+// the tutorial never offers the request form again. New tickets are
+// approved on the spot by the server while the ticket count is below the
+// highest milestone in column H of TicketApprovalWS (see data.gs). (Bad words in the name or
 // reason are caught in the browser before sending — see wordfilter.js.)
 //
 // Load right after utils.js and before anything that fetches.
@@ -42,6 +43,8 @@
 //                              | { ok:false, code:"name_taken"|"bad_name"|"bad_reason", error }
 //   (`reason` is "grade|name|role|paragraph" — built by the tutorial)
 //   info() -> true/false: are new tickets still auto-approved? (null if unknown)
+//   cap()  -> the current auto-approve limit (the highest milestone in the
+//             TicketApprovalWS sheet), or null if unknown; set by info()
 //   check() -> "approved" | "pending" | "denied" | "unknown"
 //     (Status cells like "rejected", "banned" or "no" count as denied;
 //     any other unrecognised word as pending. See normalize().)
@@ -126,17 +129,22 @@
     return res;
   }
 
-  // Whether a new ticket would be approved on the spot (the first-150 rule).
-  // The tutorial uses it to pick the order: profile first while it's true,
-  // ticket first once it isn't. null = couldn't tell (old backend/offline).
+  // Whether a new ticket would be approved on the spot (the backend decides:
+  // tickets get in while the count is below the highest milestone in column H
+  // of TicketApprovalWS). The tutorial uses it to pick the order: profile
+  // first while it's true, ticket first once it isn't. null = couldn't tell
+  // (old backend/offline). The limit itself is kept for cap().
+  let autoCap = null;
   async function info() {
     try {
       const res = await api({ type: "ticketinfo" });
+      autoCap = Number(res?.milestone) > 0 ? Number(res.milestone) : null;
       return typeof res?.autoApprove === "boolean" ? res.autoApprove : null;
     } catch (_) {
       return null;
     }
   }
+  const cap = () => autoCap;
 
   // The server passes a ticket's Status cell through as typed (only
   // approved/accepted are turned into "approved"), so the words are sorted
@@ -244,5 +252,5 @@
     return st;
   }
 
-  window.WS_Ticket = { ready, id, status, approved, asked, username, withTicket, request, info, check, verify, revoke, restore, normalize };
+  window.WS_Ticket = { ready, id, status, approved, asked, username, withTicket, request, info, cap, check, verify, revoke, restore, normalize };
 })();

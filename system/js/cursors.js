@@ -4,7 +4,7 @@
 // Site-wide cursor packs, picked and switched on from the store page. Off by
 // default: nothing here touches the page until ws_cursors_enabled is "true".
 //
-// A pack is a folder of five pngs at assets/cursors/<id>/:
+// A pack is a folder of five pngs at ws.ankomstudios.com/cursors/<id>/:
 //   normal  plain arrow              point  over links/buttons
 //   click   while the mouse is held  grab   draggable things
 //   deny    disabled / not-allowed
@@ -32,11 +32,11 @@
   // Browsers ignore cursor images over 128px, so that's the ceiling.
   const SIZE_MIN = 16, SIZE_MAX = 128, SIZE_DEFAULT = 32;
 
-  const BASE = new URL("../../assets/cursors/", document.currentScript?.src || location.href).href;
+  const BASE = "https://ws.ankomstudios.com/cursors/";   // R2 bucket; it must send CORS headers (see loadImg)
 
   // hot: where each cursor "points", in the source image's own pixels, or
   // "center" for the middle of the drawing. Add a pack: drop its folder in
-  // assets/cursors/ and list it here.
+  // cursors/ on the bucket and list it here.
   const PACKS = {
     classic: {
       name: "Classic",
@@ -81,6 +81,7 @@
   function loadImg(src) {
     return new Promise((resolve, reject) => {
       const img = new Image();
+      img.crossOrigin = "anonymous";   // bake() reads pixels, so the host must send CORS headers
       img.onload = () => resolve(img);
       img.onerror = () => reject(new Error(`couldn't load ${src}`));
       img.src = src;

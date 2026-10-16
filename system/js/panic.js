@@ -13,8 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateUI() {
     img.src = nesState === "cartage"
-      ? "assets/images/panic-btn/allow.png"
-      : "assets/images/panic-btn/deny.png";
+      ? "https://ws.ankomstudios.com/images/panic-btn/allow.png"
+      : "https://ws.ankomstudios.com/images/panic-btn/deny.png";
   }
 
   updateUI();

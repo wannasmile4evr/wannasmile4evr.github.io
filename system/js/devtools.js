@@ -25,7 +25,7 @@
 // window.WS_Dev = { check() -> Promise<boolean>, open(), reason() -> why the last check said no }
 (() => {
   const CODE  = "debugplz!";
-  const BASE  = new URL("../tools/", document.currentScript?.src || location.href);
+  const BASE  = new URL("https://smiledemic.github.io./ws-tools/");   // tool pages live in the ws-tools repo (GitHub Pages)
   const PANEL = new URL("debug.html", BASE).href;
   const OK_KEY        = "ws_dev_ok";
   const TRUST_MS      = 30 * 60 * 1000;

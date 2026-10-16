@@ -75,7 +75,7 @@ function _syncCloakBtn() {
   if (!btn) return;
   const img = btn.querySelector("img");
   if (img) {
-    img.src = isCloakOn() ? "assets/images/cloak-btn/cloaked.png" : "assets/images/cloak-btn/visable.png";
+    img.src = isCloakOn() ? "https://ws.ankomstudios.com/images/cloak-btn/cloaked.png" : "https://ws.ankomstudios.com/images/cloak-btn/visable.png";
   }
 }
 
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const img = btn.querySelector("img");
   if (img) {
-    img.src = isCloakOn() ? "assets/images/cloak-btn/cloaked.png" : "assets/images/cloak-btn/visable.png";
+    img.src = isCloakOn() ? "https://ws.ankomstudios.com/images/cloak-btn/cloaked.png" : "https://ws.ankomstudios.com/images/cloak-btn/visable.png";
   }
   btn.title = "Toggle tab cloak";
   btn.addEventListener("click", toggleCloak);
@@ -125,14 +125,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (panicInput)   panicInput.value   = localStorage.getItem("panicURL")   || "";
 
   const CLOAK_PRESETS = {
-    google:    { title: "Google",                           icon: "icons/google.png"    },
-    drive:     { title: "My Drive - Google Drive",          icon: "icons/drive.png"     },
-    classroom: { title: "Classes",                          icon: "icons/classroom.png" },
-    newtab:    { title: "New Tab",                          icon: "icons/newtab.png"    },
-    docs:      { title: "Untitled document - Google Docs",  icon: "icons/docs.png"      },
-    schoology: { title: "Schoology",                        icon: "icons/schoology.png" },
-    outlook:   { title: "Outlook – Mail",                   icon: "icons/outlook.png"   },
-    canvas:    { title: "Dashboard – Canvas",               icon: "icons/canvas.png"    },
+    google:    { title: "Google",                           icon: "https://ws.ankomstudios.com/cloaks/google.png"    },
+    drive:     { title: "My Drive - Google Drive",          icon: "https://ws.ankomstudios.com/cloaks/drive.png"     },
+    classroom: { title: "Classes",                          icon: "https://ws.ankomstudios.com/cloaks/classroom.png" },
+    newtab:    { title: "New Tab",                          icon: "https://ws.ankomstudios.com/cloaks/newtab.png"    },
+    docs:      { title: "Untitled document - Google Docs",  icon: "https://ws.ankomstudios.com/cloaks/docs.png"      },
+    schoology: { title: "Schoology",                        icon: "https://ws.ankomstudios.com/cloaks/schoology.png" },
+    outlook:   { title: "Outlook – Mail",                   icon: "https://ws.ankomstudios.com/cloaks/outlook.png"   },
+    canvas:    { title: "Dashboard – Canvas",               icon: "https://ws.ankomstudios.com/cloaks/canvas.png"    },
   };
 
   presetCloakSel?.addEventListener("change", () => {
